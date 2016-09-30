@@ -1,8 +1,9 @@
-import pytest
 import aiohttp
+import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
-from ..core.methods import BaseMethod
+
+from djaio.core.methods import BaseMethod
 
 
 @pytest.fixture
