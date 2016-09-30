@@ -8,6 +8,8 @@ from aiohttp.hdrs import (
 from aiohttp import web
 from aiohttp.helpers import MultiDict
 
+from djaio.core.utils import get_int_or_none
+
 
 class BaseMethod(object):
     def __init__(self):
@@ -20,25 +22,29 @@ class BaseMethod(object):
         self.pagination = None
         self.limit = None
         self.offset = None
+        self.settings = None
 
     async def from_http(self, request):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
+        get_params = request.GET.copy()
+        self.limit = request.headers.get('X-Limit') or \
+                     get_int_or_none(get_params.pop('limit', None)) or \
+                     request.app.settings.LIMIT
+        self.offset = request.headers.get('X-Offset') or \
+                      get_int_or_none(get_params.pop('offset', None)) or \
+                      request.app.settings.OFFSET
+
         if request.method in (METH_GET, METH_DELETE):
-            self.params = MultiDict(request.GET)
+            self.params = MultiDict(get_params)
         elif request.method in (METH_PUT, METH_POST):
             try:
                 self.params = MultiDict(await request.json())
             except (ValueError, TypeError):
                 self.params = MultiDict(await request.post())
 
-        self.limit = request.headers.get('X-Limit') or \
-            request.GET.get('limit') or \
-            request.app.settings.LIMIT
-        self.offset = request.headers.get('X-Offset') or \
-            request.GET.get('offset') or \
-            request.app.settings.OFFSET
+        self.settings = request.app.settings
 
     async def execute(self):
         raise NotImplementedError('Please override `execute()` method.')

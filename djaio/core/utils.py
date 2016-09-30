@@ -1,3 +1,4 @@
+#!-*- coding: utf-8 -*-
 import asyncio
 
 async def gather_map(map, coro, *args, **kwargs):
@@ -8,3 +9,10 @@ async def gather_map(map, coro, *args, **kwargs):
         _coros.append(coro(value, *args, **kwargs))
     _results = await asyncio.gather(*_coros)
     return zip(_keys, _results)
+
+
+def get_int_or_none(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
