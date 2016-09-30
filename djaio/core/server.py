@@ -40,11 +40,22 @@ def get_middlewares(settings):
             continue
     return out
 
+def get_router(settings):
+    custom_router = getattr(settings, 'CUSTOM_ROUTER', None)
+    if custom_router:
+        module_name, factory = custom_router.rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        try:
+            return (getattr(module, factory))
+        except KeyError:
+            pass
+
 
 def init_app():
     settings = get_settings()
     middlewares = get_middlewares(settings)
-    app = web.Application(middlewares=middlewares, debug=settings.DEBUG)
+    router = get_router(settings)
+    app = web.Application(middlewares=middlewares, debug=settings.DEBUG, router=router() if router else None)
     app.settings = settings
     discover_urls(app)
     return app
