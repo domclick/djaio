@@ -7,7 +7,7 @@ base = os.path.dirname(os.path.abspath(__file__))
 install_requires = [
     'aiohttp',
     'aiohttp_jinja2',
-    'asyncio'
+    'asyncio',
     'aiohttp_debugtoolbar',
     'aiohttp_autoreload',
 ]
