@@ -1,3 +1,4 @@
+#!-*- coding: utf-8 -*-
 import json
 from aiohttp import web
 from aiohttp_jinja2 import get_env

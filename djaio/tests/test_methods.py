@@ -1,15 +1,19 @@
+#!-*- coding: utf-8 -*-
+import os
 import aiohttp
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from djaio.core.methods import BaseMethod
+from djaio import Djaio
+from ..core.methods import BaseMethod
 
 
 @pytest.fixture
 def create_app(loop):
-    app = web.Application(loop=loop)
-    return app
+    os.environ.setdefault('SETTINGS', 'app.settings.test')
+    djaio = Djaio(loop)
+    return djaio.app
 
 
 async def test_from_request(test_client, create_app):
