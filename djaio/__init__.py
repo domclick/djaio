@@ -30,7 +30,7 @@ class Djaio(object):
 
         if subcommand == 'help':
             print('=' * 60)
-            print('Usage: {} <command> <options>'.format(os.path.split('/')[1]))
+            print('Usage: {} <command> <options>'.format(self.argv[0].rsplit('/', 1)[1]))
             print('Available commands:')
             print(' * help - shows this message')
             print(' * runserver host:port - runs web server')
