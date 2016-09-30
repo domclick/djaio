@@ -25,8 +25,9 @@ class RemoteContextMixin(BaseContextmixin):
             async with session.get(url) as resp:
                 if resp.status != 200:
                     raise web.HTTPBadGateway
+                session.close()
                 try:
-                    return await resp.json()
+                    return await resp.json() or ''
                 except:
                     raise web.HTTPBadGateway
 
