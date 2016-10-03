@@ -2,7 +2,7 @@
 import os
 import aiohttp
 import pytest
-from aiohttp import web
+import asyncio
 from aiohttp.test_utils import make_mocked_request
 
 from djaio import Djaio
@@ -11,9 +11,13 @@ from ..core.methods import BaseMethod
 
 @pytest.fixture
 def create_app(loop):
-    os.environ.setdefault('SETTINGS', 'app.settings.test')
-    djaio = Djaio(loop)
+    os.environ.setdefault('SETTINGS', 'app.settings.local')
+    djaio = Djaio(loop=loop)
     return djaio.app
+
+
+loop = asyncio.get_event_loop()
+app = create_app(loop)
 
 
 async def test_from_request(test_client, create_app):

@@ -6,9 +6,9 @@ from djaio.core.server import init_app
 
 class Djaio(object):
 
-    def __init__(self, custom_init=None):
+    def __init__(self, custom_init=None, loop=None):
         self.argv = sys.argv
-        self.app = init_app()
+        self.app = init_app(loop=loop)
         if callable(custom_init):
             custom_init(self.app)
 

@@ -60,11 +60,16 @@ def get_router(settings):
         return _import_func(custom_router)
 
 
-def init_app():
+def init_app(loop=None):
     settings = get_settings()
     middlewares = get_middlewares(settings)
     router = get_router(settings)
-    app = web.Application(middlewares=middlewares, debug=settings.DEBUG, router=router() if router else None)
+    app = web.Application(
+        middlewares=middlewares,
+        debug=settings.DEBUG,
+        router=router() if router else None,
+        loop=loop
+    )
     app.settings = settings
     discover_urls(app)
     return app
