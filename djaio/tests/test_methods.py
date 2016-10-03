@@ -22,4 +22,4 @@ async def test_from_request():
 
     req = make_mocked_request('GET', '/', )
     await method.from_http(req)
-    assert method.params is None
+    assert not method.params
