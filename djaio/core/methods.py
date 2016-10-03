@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from aiohttp.hdrs import (
     METH_GET,
     METH_POST,
@@ -6,14 +8,16 @@ from aiohttp.hdrs import (
     METH_DELETE
 )
 from aiohttp import web
-from aiohttp.helpers import MultiDict
+from djaio.core.models import NullInput
 
 from djaio.core.utils import get_int_or_none
+from schematics.exceptions import ModelConversionError
 
 
 class BaseMethod(object):
-    def __init__(self):
+    def __init__(self, _model=NullInput):
         self.result = None
+        self.model = _model
         self.total = None
         self.success = None
         self.errors = []
@@ -28,7 +32,11 @@ class BaseMethod(object):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
-        get_params = request.GET.copy()
+        get_params = {}
+        for k in request.GET.keys():
+            v = request.GET.getall(k)
+            get_params.update({k:v[0] if len(v) == 1 else v})
+
         self.limit = request.headers.get('X-Limit') or \
                      get_int_or_none(get_params.pop('limit', None)) or \
                      request.app.settings.LIMIT
@@ -36,14 +44,16 @@ class BaseMethod(object):
                       get_int_or_none(get_params.pop('offset', None)) or \
                       request.app.settings.OFFSET
 
-        if request.method in (METH_GET, METH_DELETE):
-            self.params = MultiDict(get_params)
-        elif request.method in (METH_PUT, METH_POST):
-            try:
-                self.params = MultiDict(await request.json())
-            except (ValueError, TypeError):
-                self.params = MultiDict(await request.post())
-
+        try:
+            if request.method in (METH_GET, METH_DELETE):
+                self.params = self.model(get_params).to_primitive()
+            elif request.method in (METH_PUT, METH_POST):
+                try:
+                    self.params = self.model(await request.json()).to_primitive()
+                except (ValueError, TypeError):
+                    self.params = self.model(await request.post()).to_primitive()
+        except ModelConversionError as exc:
+            raise web.HTTPBadRequest(text=json.dumps(exc.messages))
         self.settings = request.app.settings
 
     async def execute(self):
