@@ -54,6 +54,25 @@ def get_middlewares(settings):
     return out
 
 
+def get_commands(settings):
+    commands = getattr(settings, 'MANAGEMENT_COMMANDS', [])
+    out = {}
+    for item in commands:
+        try:
+            _func = _import_func(item)
+        except ImportError:
+            continue
+        if hasattr(_func, 'command_name'):
+            _name = _func.command_name
+        else:
+            _name = _func.__name__
+        out[_name] = {
+            'func': _func,
+            'description': getattr(_func, 'command_description', '')
+        }
+    return out
+
+
 def get_router(settings):
     custom_router = getattr(settings, 'CUSTOM_ROUTER', None)
     if custom_router:
@@ -72,4 +91,5 @@ def init_app(loop=None):
     )
     app.settings = settings
     discover_urls(app)
+    app.commands = get_commands(settings)
     return app

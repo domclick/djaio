@@ -1,5 +1,5 @@
-import os
 import sys
+import asyncio
 from aiohttp import web
 from djaio.core.server import init_app
 
@@ -28,10 +28,17 @@ class Djaio(object):
                 port = '8080'
             web.run_app(self.app, host=host, port=port)
 
-        if subcommand == 'help':
+        elif subcommand == 'help':
             print('=' * 60)
             print('Usage: {} <command> <options>'.format(self.argv[0].rsplit('/', 1)[1]))
             print('Available commands:')
             print(' * help - shows this message')
             print(' * runserver host:port - runs web server')
+            for key, comm_obj in self.app.commands.items():
+                print(' * {} <options> - {}'.format(key, comm_obj.get('description')))
             print('=' * 60)
+
+        elif subcommand in self.app.commands:
+            _args = self.argv[2:]
+            _coro = self.app.commands[subcommand].get('func')
+            self.app.loop.run_until_complete(_coro(self.app, *_args))
