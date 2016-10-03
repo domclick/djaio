@@ -29,27 +29,35 @@ def discover_urls(app):
     urlconf.setup(app)
 
 
+def _import_func(dotted_str):
+    """
+    Imports function using dot-notation string.
+    :param dotted_str: Dotted path to function like `module.submodule.func`
+    :return: func
+    """
+    module_name, factory = dotted_str.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    try:
+        return getattr(module, factory)
+    except KeyError:
+        raise ImportError('There is no {} in {} module!'.format(factory, module))
+
+
 def get_middlewares(settings):
     middleware_list = getattr(settings, 'MIDDLEWARES', [])
     out = []
     for item in middleware_list:
-        module_name, factory = item.rsplit('.', 1)
-        module = importlib.import_module(module_name)
         try:
-            out.append(getattr(module, factory))
-        except KeyError:
+            out.append(_import_func(item))
+        except ImportError:
             continue
     return out
+
 
 def get_router(settings):
     custom_router = getattr(settings, 'CUSTOM_ROUTER', None)
     if custom_router:
-        module_name, factory = custom_router.rsplit('.', 1)
-        module = importlib.import_module(module_name)
-        try:
-            return (getattr(module, factory))
-        except KeyError:
-            pass
+        return _import_func(custom_router)
 
 
 def init_app():
