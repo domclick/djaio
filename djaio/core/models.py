@@ -12,3 +12,7 @@ class Model(SchematicsModel):
 class NullInput(SchematicsModel):
     pass
 
+
+class NullOutput(SchematicsModel):
+    pass
+

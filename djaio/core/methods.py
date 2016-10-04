@@ -8,16 +8,17 @@ from aiohttp.hdrs import (
     METH_DELETE
 )
 from aiohttp import web
-from djaio.core.models import NullInput
+from djaio.core.models import NullInput, NullOutput
 
 from djaio.core.utils import get_int_or_none
 from schematics.exceptions import ModelConversionError
 
 
 class BaseMethod(object):
-    def __init__(self, _model=NullInput):
+    def __init__(self, input_model=NullInput, output_model=NullOutput):
         self.result = None
-        self.model = _model
+        self.input_model = input_model
+        self.output_model = output_model
         self.total = None
         self.success = None
         self.errors = []
@@ -46,7 +47,7 @@ class BaseMethod(object):
 
         try:
             if request.method in (METH_GET, METH_DELETE):
-                self.params = self.model(get_params).to_primitive()
+                self.params = self.input_model(get_params).to_primitive()
             elif request.method in (METH_PUT, METH_POST):
                 try:
                     self.params = self.model(await request.json()).to_primitive()
@@ -73,7 +74,7 @@ class BaseMethod(object):
     async def get_output(self):
         self.result = await self.execute()
         self.output = {
-            'result': self.result,
+            'result': [self.output_model(x).to_primitive() for x in self.result],
             'success': not self.errors
         }
         if self.errors:
