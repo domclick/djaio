@@ -15,7 +15,7 @@ from schematics.exceptions import ModelConversionError
 
 
 class BaseMethod(object):
-    def __init__(self, input_model=NullInput, output_model=NullOutput):
+    def __init__(self, input_model=NullInput, output_model=NullOutput, description=None):
         self.result = None
         self.input_model = input_model
         self.output_model = output_model
@@ -28,6 +28,7 @@ class BaseMethod(object):
         self.limit = None
         self.offset = None
         self.settings = None
+        self.description = description
 
     async def from_http(self, request):
         if not isinstance(request, web.Request):
@@ -50,9 +51,9 @@ class BaseMethod(object):
                 self.params = self.input_model(get_params).to_primitive()
             elif request.method in (METH_PUT, METH_POST):
                 try:
-                    self.params = self.model(await request.json()).to_primitive()
+                    self.params = self.input_model(await request.json()).to_primitive()
                 except (ValueError, TypeError):
-                    self.params = self.model(await request.post()).to_primitive()
+                    self.params = self.input_model(await request.post()).to_primitive()
         except ModelConversionError as exc:
             raise web.HTTPBadRequest(text=json.dumps(exc.messages))
         self.settings = request.app.settings
