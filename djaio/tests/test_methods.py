@@ -5,13 +5,15 @@ import pytest
 from aiohttp.test_utils import make_mocked_request
 
 from djaio import Djaio
+from app import init_app
 from ..core.methods import BaseMethod
 
 
 @pytest.fixture
 def create_app(loop):
     os.environ.setdefault('SETTINGS', 'app.settings.test')
-    djaio = Djaio(loop)
+    djaio = Djaio(custom_init=init_app, loop=loop)
+    #djaio = Djaio(loop)
     return djaio.app
 
 
