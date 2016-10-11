@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from aiohttp.hdrs import (
     METH_GET,
     METH_POST,
@@ -6,14 +8,17 @@ from aiohttp.hdrs import (
     METH_DELETE
 )
 from aiohttp import web
-from aiohttp.helpers import MultiDict
+from djaio.core.models import NullInput, NullOutput
 
 from djaio.core.utils import get_int_or_none
+from schematics.exceptions import ModelConversionError, ConversionError
 
 
 class BaseMethod(object):
-    def __init__(self):
+    def __init__(self, input_model=NullInput, output_model=NullOutput, description=None):
         self.result = None
+        self.input_model = input_model
+        self.output_model = output_model
         self.total = None
         self.success = None
         self.errors = []
@@ -23,12 +28,18 @@ class BaseMethod(object):
         self.limit = None
         self.offset = None
         self.settings = None
+        self.description = description
+
+    def process_request(self, request):
+        #Override it for your purposes
+        return request.copy()
 
     async def from_http(self, request):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
-        get_params = request.GET.copy()
+        get_params = self.process_request(request.GET)
+
         self.limit = request.headers.get('X-Limit') or \
                      get_int_or_none(get_params.pop('limit', None)) or \
                      request.app.settings.LIMIT
@@ -36,14 +47,16 @@ class BaseMethod(object):
                       get_int_or_none(get_params.pop('offset', None)) or \
                       request.app.settings.OFFSET
 
-        if request.method in (METH_GET, METH_DELETE):
-            self.params = MultiDict(get_params)
-        elif request.method in (METH_PUT, METH_POST):
-            try:
-                self.params = MultiDict(await request.json())
-            except (ValueError, TypeError):
-                self.params = MultiDict(await request.post())
-
+        try:
+            if request.method in (METH_GET, METH_DELETE):
+                self.params = self.input_model(get_params).to_primitive()
+            elif request.method in (METH_PUT, METH_POST):
+                try:
+                    self.params = self.input_model(await request.json()).to_primitive()
+                except (ValueError, TypeError):
+                    self.params = self.input_model(await request.post()).to_primitive()
+        except (ModelConversionError, ConversionError) as exc:
+            raise web.HTTPBadRequest(text=json.dumps(exc.messages))
         self.settings = request.app.settings
 
     async def execute(self):
@@ -63,7 +76,7 @@ class BaseMethod(object):
     async def get_output(self):
         self.result = await self.execute()
         self.output = {
-            'result': self.result,
+            'result': [self.output_model(x).to_primitive() for x in self.result],
             'success': not self.errors
         }
         if self.errors:

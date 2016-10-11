@@ -10,6 +10,7 @@ install_requires = [
     'asyncio',
     'aiohttp_debugtoolbar',
     'aiohttp_autoreload',
+    'schematics>=2.0.0.dev2'
 ]
 
 tests_require = [
