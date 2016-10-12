@@ -11,7 +11,7 @@ from aiohttp import web
 from djaio.core.models import NullInput, NullOutput
 
 from djaio.core.utils import get_int_or_none
-from schematics.exceptions import ModelConversionError
+from schematics.exceptions import ModelConversionError, ConversionError
 
 
 class BaseMethod(object):
@@ -31,6 +31,8 @@ class BaseMethod(object):
         self.description = description
 
     async def from_http(self, request):
+        self.errors = []
+        self.result = []
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
@@ -55,7 +57,13 @@ class BaseMethod(object):
                 except (ValueError, TypeError):
                     self.params = self.input_model(await request.post()).to_primitive()
         except ModelConversionError as exc:
-            raise web.HTTPBadRequest(text=json.dumps(exc.messages))
+            text={k: str(v) for k,v in exc.messages.items()}
+            raise web.HTTPBadRequest(text=json.dumps(text))
+        except ConversionError as exc:
+            text = {'error':str(exc)}
+            raise web.HTTPBadRequest(text=json.dumps(text))
+        except Exception as exc:
+            raise web.HTTPBadRequest(text=str(exc))
         self.settings = request.app.settings
 
     async def execute(self):

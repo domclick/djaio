@@ -1,6 +1,9 @@
 #!-*- coding: utf-8 -*-
 import asyncio
 
+from psycopg2 import errorcodes
+
+
 async def gather_map(map, coro, *args, **kwargs):
     _keys = []
     _coros = []
@@ -16,3 +19,10 @@ def get_int_or_none(value):
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def get_pg_error(code):
+    try:
+        return errorcodes.lookup(code)
+    except KeyError:
+        return 'Unknown error'
