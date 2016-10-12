@@ -30,16 +30,17 @@ class BaseMethod(object):
         self.settings = None
         self.description = description
 
+    def process_request(self, request):
+        #Override it for your purposes
+        return request.copy()
+
     async def from_http(self, request):
         self.errors = []
         self.result = []
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
-        get_params = {}
-        for k in request.GET.keys():
-            v = request.GET.getall(k)
-            get_params.update({k:v[0] if len(v) == 1 else v})
+        get_params = self.process_request(request.GET)
 
         self.limit = request.headers.get('X-Limit') or \
                      get_int_or_none(get_params.pop('limit', None)) or \
@@ -56,14 +57,8 @@ class BaseMethod(object):
                     self.params = self.input_model(await request.json()).to_primitive()
                 except (ValueError, TypeError):
                     self.params = self.input_model(await request.post()).to_primitive()
-        except ModelConversionError as exc:
-            text={k: str(v) for k,v in exc.messages.items()}
-            raise web.HTTPBadRequest(text=json.dumps(text))
-        except ConversionError as exc:
-            text = {'error':str(exc)}
-            raise web.HTTPBadRequest(text=json.dumps(text))
-        except Exception as exc:
-            raise web.HTTPBadRequest(text=str(exc))
+        except (ModelConversionError, ConversionError) as exc:
+            raise web.HTTPBadRequest(text=json.dumps(exc.messages))
         self.settings = request.app.settings
 
     async def execute(self):
