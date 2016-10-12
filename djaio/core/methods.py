@@ -40,7 +40,7 @@ class BaseMethod(object):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
-        get_params = self.process_request(request.GET)
+        get_params = dict(self.process_request(request.GET))
 
         self.limit = request.headers.get('X-Limit') or \
                      get_int_or_none(get_params.pop('limit', None)) or \
