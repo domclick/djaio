@@ -35,6 +35,8 @@ class BaseMethod(object):
         return request.copy()
 
     async def from_http(self, request):
+        self.errors = []
+        self.result = []
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 

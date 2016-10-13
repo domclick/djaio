@@ -1,6 +1,7 @@
 #!-*- coding: utf-8 -*-
 import asyncio
 
+
 async def gather_map(map, coro, *args, **kwargs):
     _keys = []
     _coros = []
