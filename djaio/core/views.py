@@ -86,7 +86,8 @@ class JsonView(web.View):
             status = exc.status_code
 
         except BadRequestException as exc:
-            response['errors'] = exc.message
+            response['errors'] = method.errors
+            response['errors'].append(exc.to_dict())
             status = exc.status_code
 
         except Exception as exc:
@@ -96,6 +97,9 @@ class JsonView(web.View):
                 'message': str(exc)
             })
             status = 500
+        if response.get('errors') and status == default_status:
+            status = response.get('errors', [{}])[0].get('code', default_status)
+
         return web.json_response(response, status=status)
 
     async def get(self):
