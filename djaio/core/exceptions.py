@@ -29,3 +29,10 @@ class ObjectNotFoundException(BaseApiException):
         self.message = self.message % _id
         super().__init__(args, kwargs)
 
+
+class BadRequestException(BaseApiException):
+    status_code = 400
+
+    def __init__(self, *args, **kwargs):
+        self.message = kwargs.get('message')
+        super().__init__(args, kwargs)
