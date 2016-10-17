@@ -5,7 +5,7 @@ from aiohttp import web
 from aiohttp.hdrs import METH_ALL
 import aiohttp_jinja2
 
-from djaio.core.exceptions import ObjectNotFoundException, ObjectAlreadyExistException
+from djaio.core.exceptions import ObjectNotFoundException, ObjectAlreadyExistException, BadRequestException
 from djaio.core.utils import gather_map
 
 
@@ -70,10 +70,12 @@ class JsonView(web.View):
     async def _process_request(self, method, default_status=200):
         if not method:
             raise web.HTTPMethodNotAllowed
-        await method.from_http(self.request)
+
         response = self.empty_response
         status = default_status
+
         try:
+            await method.from_http(self.request)
             response = await method.get_output()
         except (
                 ObjectNotFoundException,
@@ -82,6 +84,12 @@ class JsonView(web.View):
             response['errors'] = method.errors
             response['errors'].append(exc.to_dict())
             status = exc.status_code
+
+        except BadRequestException as exc:
+            response['errors'] = method.errors
+            response['errors'].append(exc.to_dict())
+            status = exc.status_code
+
         except Exception as exc:
             response['errors'] = method.errors
             response['errors'].append({
@@ -89,6 +97,9 @@ class JsonView(web.View):
                 'message': str(exc)
             })
             status = 500
+        if response.get('errors') and status == default_status:
+            status = response.get('errors', [{}])[0].get('code', default_status)
+
         return web.json_response(response, status=status)
 
     async def get(self):

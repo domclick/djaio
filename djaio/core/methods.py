@@ -8,10 +8,11 @@ from aiohttp.hdrs import (
     METH_DELETE
 )
 from aiohttp import web
+from djaio.core.exceptions import BadRequestException
 from djaio.core.models import NullInput, NullOutput
 
 from djaio.core.utils import get_int_or_none
-from schematics.exceptions import ModelConversionError, ConversionError
+from schematics.exceptions import ModelConversionError, ConversionError, DataError
 
 
 class BaseMethod(object):
@@ -57,8 +58,20 @@ class BaseMethod(object):
                     self.params = self.input_model(await request.json()).to_primitive()
                 except (ValueError, TypeError):
                     self.params = self.input_model(await request.post()).to_primitive()
-        except (ModelConversionError, ConversionError) as exc:
-            raise web.HTTPBadRequest(text=json.dumps(exc.messages))
+        except (ModelConversionError, ConversionError, DataError) as exc:
+
+            errors = []
+            for k, v in exc.messages.items():
+
+                if isinstance(v, dict):
+                    for _, error in v.items():
+                        if isinstance(error, ConversionError):
+                            errors.append({k: [x.summary for x in error.messages]})
+
+                elif isinstance(v, ConversionError):
+                    errors.append({k: [x.summary for x in v.messages]})
+
+            raise BadRequestException(message=errors)
         self.settings = request.app.settings
 
     async def execute(self):
