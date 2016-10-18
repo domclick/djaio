@@ -98,7 +98,8 @@ class JsonView(web.View):
             })
             status = 500
         if response.get('errors') and status == default_status:
-            status = response.get('errors', [{}])[0].get('code', default_status)
+            error = response.get('errors', [{}])[0]
+            status = 500 if isinstance(error, str) else error.get('code', default_status)
 
         return web.json_response(response, status=status)
 
