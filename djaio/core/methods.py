@@ -12,7 +12,7 @@ from djaio.core.exceptions import BadRequestException
 from djaio.core.models import NullInput, NullOutput
 
 from djaio.core.utils import get_int_or_none
-from schematics.exceptions import ModelConversionError, ConversionError, DataError
+from schematics.exceptions import ModelConversionError, ConversionError, DataError, ValidationError
 
 
 class BaseMethod(object):
@@ -33,7 +33,12 @@ class BaseMethod(object):
 
     def process_request(self, request):
         #Override it for your purposes
-        return request.copy()
+        params = {}
+        for k in set(request.GET.keys()):
+            v = request.GET.getall(k)
+            params.update({k: v if len(v) > 1 else v[0]})
+        params.update(request.match_info.copy())
+        return params
 
     async def from_http(self, request):
         self.errors = []
@@ -41,7 +46,7 @@ class BaseMethod(object):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
-        get_params = self.process_request(request.GET)
+        get_params = self.process_request(request)
 
         self.limit = request.headers.get('X-Limit') or \
                      get_int_or_none(get_params.pop('limit', None)) or \
@@ -52,25 +57,28 @@ class BaseMethod(object):
 
         try:
             if request.method in (METH_GET, METH_DELETE):
-                self.params = self.input_model(get_params).to_primitive()
+                params = self.input_model(get_params)
             elif request.method in (METH_PUT, METH_POST):
                 try:
-                    self.params = self.input_model(await request.json()).to_primitive()
+                    params = self.input_model(await request.json())
                 except (ValueError, TypeError):
-                    self.params = self.input_model(await request.post()).to_primitive()
+                    params = self.input_model(await request.post())
+            params.validate()
+            self.params = params.to_primitive()
         except (ModelConversionError, ConversionError, DataError) as exc:
-
             errors = []
-            for k, v in exc.messages.items():
+            if isinstance(exc.messages, list):
+                errors = [x.summary for x in exc.messages]
+            else:
+                for k, v in exc.messages.items():
 
-                if isinstance(v, dict):
-                    for _, error in v.items():
-                        if isinstance(error, ConversionError):
-                            errors.append({k: [x.summary for x in error.messages]})
+                    if isinstance(v, dict):
+                        for _, error in v.items():
+                            if isinstance(error, ConversionError):
+                                errors.append({k: [x.summary for x in error.messages]})
 
-                elif isinstance(v, ConversionError):
-                    errors.append({k: [x.summary for x in v.messages]})
-
+                    elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
+                        errors.append({k: [x.summary for x in v.messages]})
             raise BadRequestException(message=errors)
         self.settings = request.app.settings
 
