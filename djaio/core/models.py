@@ -12,7 +12,7 @@ class Model(SchematicsModel):
 class NullInput(SchematicsModel):
 
     def __init__(self, *args, **kwargs):
-        return
+        self._data = {}
 
 
 class NullOutput(SchematicsModel):
