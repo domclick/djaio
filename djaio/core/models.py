@@ -12,6 +12,7 @@ class Model(SchematicsModel):
 class NullInput(SchematicsModel):
 
     def __init__(self, *args, **kwargs):
+        self._data = {}
         return
 
 
