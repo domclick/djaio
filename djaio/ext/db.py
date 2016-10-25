@@ -10,12 +10,12 @@ class DB:
         self.config = config
         self.dbs = {}
 
-    def init(self):
+    async def init(self):
         for _key, _creds in self.config.items():
             self.dbs[_key] = {}
             for _role, _dsn in _creds.items():
-                self.dbs[_key][_role] = aiopg.create_pool(
-                    _dsn, minsize=5, maxsize=7
+                self.dbs[_key][_role] = await aiopg.create_pool(
+                    _dsn, minsize=1, maxsize=10, timeout=5
                 )
 
     async def shutdown(self, app):
@@ -32,6 +32,14 @@ class DB:
                     await item.wait_closed()
 
     async def execute(self, db_name: str, query: str, values: List, _type: str):
+        """
+        Execute SQL query in connection pool
+        :param db_name:
+        :param query:
+        :param values:
+        :param _type:
+        :return:
+        """
 
         if _type not in ('select', 'insert', 'update', 'delete'):
             raise RuntimeError(
@@ -46,22 +54,20 @@ class DB:
         if _type == 'select' and 'slave' in self.dbs[db_name]:
             pool = self.dbs[db_name]['slave']
 
-        async with pool as _pool:
-            async with _pool.acquire() as conn:
-                async with conn.cursor(cursor_factory=DictCursor) as cursor:
-                    await cursor.execute(query, values)
+        async with pool.acquire() as conn:
+            async with conn.cursor(cursor_factory=DictCursor) as cursor:
+                await cursor.execute(query, values)
 
-                    if _type == 'select':
-                        data = await cursor.fetchall()
-                    else:
-                        cursor.connection.commit()
-
-                        data = await cursor.rowcount()
+                if _type == 'select':
+                    data = await cursor.fetchall()
+                else:
+                    cursor.connection.commit()
+                    data = await cursor.rowcount()
         return data
 
 
 def setup(app):
     db = DB(app.settings.DATABASE)
-    db.init()
+    app.loop.run_until_complete(db.init())
     app.db = db
-    app.on_shutdown.append(db.shutdown)
+    app.on_cleanup.append(db.shutdown)
