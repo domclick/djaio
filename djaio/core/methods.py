@@ -34,10 +34,14 @@ class BaseMethod(object):
     def process_request(self, request):
         #Override it for your purposes
         params = {}
+
         for k in set(request.GET.keys()):
             v = request.GET.getall(k)
             params.update({k: v if len(v) > 1 else v[0]})
-        params.update(request.match_info.copy())
+
+        if request.match_info:
+            params.update(request.match_info.copy())
+
         return params
 
     async def from_http(self, request):
