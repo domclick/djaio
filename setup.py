@@ -10,7 +10,8 @@ install_requires = [
     'asyncio',
     'aiohttp_debugtoolbar',
     'aiohttp_autoreload',
-    'schematics>=2.0.0.dev2'
+    'schematics>=2.0.0.dev2',
+    'aiopg==0.11.0',
 ]
 
 tests_require = [
@@ -19,7 +20,7 @@ tests_require = [
 ]
 
 setup(name='djaio',
-      version='0.0.1',
+      version='0.0.3',
       description='Djaio - Django-inspired AsyncIO web framework',
       long_description='',
       author='Vadim Tregubov',

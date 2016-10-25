@@ -28,6 +28,7 @@ class BaseMethod(object):
         self.pagination = None
         self.limit = None
         self.offset = None
+        self.app = None
         self.settings = None
         self.description = description
 
@@ -84,6 +85,7 @@ class BaseMethod(object):
                     elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
                         errors.append({k: [x.summary for x in v.messages]})
             raise BadRequestException(message=errors)
+        self.app = request.app
         self.settings = request.app.settings
 
     async def execute(self):
