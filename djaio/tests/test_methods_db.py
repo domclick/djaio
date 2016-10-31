@@ -105,3 +105,10 @@ class TestBaseMethod(DjaioAppTestCase):
         item = res.get('result')[0]['id']
         del_req = await self.client.delete('/test_input/{}'.format(item))
         assert del_req.status == 204
+
+    @unittest_run_loop
+    async def test_TRUNCATE_TEST_TABLE(self):
+        await self.init_db()
+        await self.app.db.execute('test_db', "DELETE FROM test_table;", [], 'delete')
+        assert True
+
