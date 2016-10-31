@@ -45,22 +45,22 @@ class BaseMethod(object):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
         try:
-            get_params = {}
+            req_params = {}
             # if GET or DELETE we read a query params
             if request.method in (METH_GET, METH_DELETE):
-                get_params = self.process_request(request.GET)
+                req_params = self.process_request(request.GET)
             # else we read a POST-data
             elif request.method in (METH_PUT, METH_POST):
                 try:
-                    get_params = self.process_request(await request.json())
+                    req_params = self.process_request(await request.json())
                 except (ValueError, TypeError):
-                    get_params = self.process_request(await request.post())
+                    req_params = self.process_request(await request.post())
 
             # Here we add or owerride params by PATH-params.
             # If it exist
             if request.match_info:
-                get_params.update(request.match_info.copy())
-            params = self.input_model(get_params)
+                req_params.update(request.match_info.copy())
+            params = self.input_model(req_params)
             params.validate()
             self.params = params.to_primitive()
         except (ModelConversionError, ConversionError, DataError) as exc:
@@ -79,12 +79,12 @@ class BaseMethod(object):
                         errors.append({k: [x.summary for x in v.messages]})
             raise BadRequestException(message=errors)
 
-        self.limit = request.headers.get('X-Limit') or \
-                     get_int_or_none(get_params.pop('limit', None)) or \
-                     request.app.settings.LIMIT
-        self.offset = request.headers.get('X-Offset') or \
-                      get_int_or_none(get_params.pop('offset', None)) or \
-                      request.app.settings.OFFSET
+        self.limit = get_int_or_none(request.headers.get('X-Limit')) or \
+                     get_int_or_none(req_params.pop('limit', None)) or \
+                     get_int_or_none(request.app.settings.LIMIT)
+        self.offset = get_int_or_none(request.headers.get('X-Offset')) or \
+                      get_int_or_none(req_params.pop('offset', None)) or \
+                      get_int_or_none(request.app.settings.OFFSET)
         self.errors = []
         self.result = []
         self.app = request.app
