@@ -35,7 +35,7 @@ class BaseMethod(object):
     def process_request(self, multi):
         #Override it for your purposes
         params = {}
-        # Here we convert a MultiDict to simple python dict.
+        # Here we convert a MultiDict to simple python dict.py
         for k in set(multi.keys()):
             v = multi.getall(k)
             params.update({k: v if len(v) > 1 else v[0]})
@@ -60,6 +60,14 @@ class BaseMethod(object):
             # If it exist
             if request.match_info:
                 req_params.update(request.match_info.copy())
+
+            self.limit = get_int_or_none(request.headers.get('X-Limit')) or \
+                         get_int_or_none(req_params.pop('limit', None)) or \
+                         get_int_or_none(request.app.settings.LIMIT)
+            self.offset = get_int_or_none(request.headers.get('X-Offset')) or \
+                          get_int_or_none(req_params.pop('offset', None)) or \
+                          get_int_or_none(request.app.settings.OFFSET)
+
             params = self.input_model(req_params)
             params.validate()
             self.params = params.to_primitive()
@@ -79,12 +87,6 @@ class BaseMethod(object):
                         errors.append({k: [x.summary for x in v.messages]})
             raise BadRequestException(message=errors)
 
-        self.limit = get_int_or_none(request.headers.get('X-Limit')) or \
-                     get_int_or_none(req_params.pop('limit', None)) or \
-                     get_int_or_none(request.app.settings.LIMIT)
-        self.offset = get_int_or_none(request.headers.get('X-Offset')) or \
-                      get_int_or_none(req_params.pop('offset', None)) or \
-                      get_int_or_none(request.app.settings.OFFSET)
         self.errors = []
         self.result = []
         self.app = request.app

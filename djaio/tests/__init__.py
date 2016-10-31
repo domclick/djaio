@@ -25,7 +25,6 @@ class DjaioAppTestCase(AioHTTPTestCase):
             self.DB_CONF = getattr(app.settings, 'TEST_DB', _DB_CONF)
             self.loop = loop
         except Exception as e:
-            print(e, '1'*24)
             djaio = Djaio(loop=loop)
             app = djaio.app
         self.init_routes(app)
