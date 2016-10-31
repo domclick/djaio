@@ -16,7 +16,6 @@ def create_app(loop):
 
 async def test_from_request(create_app):
     method = BaseMethod()
-
     req = make_mocked_request('GET', '/', )
     await method.from_http(req)
     assert not method.params
