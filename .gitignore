@@ -8,3 +8,5 @@
 .DS_Store
 .cache
 *.egg-info
+
+djaio/tests/settings/base.py
