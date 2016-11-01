@@ -3,7 +3,10 @@ import os
 from djaio import Djaio
 from aiohttp.test_utils import AioHTTPTestCase
 from djaio.ext.db import DB
-from djaio.tests.settings.base import TEST_DB as _DB_CONF
+try:
+    from djaio.tests.settings.base import TEST_DB as _DB_CONF
+except ImportError:
+    _DB_CONF = {}
 
 
 class DjaioAppTestCase(AioHTTPTestCase):
