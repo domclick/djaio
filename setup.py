@@ -20,7 +20,7 @@ tests_require = [
 ]
 
 setup(name='djaio',
-      version='0.0.3',
+      version='0.0.4',
       description='Djaio - Django-inspired AsyncIO web framework',
       long_description='',
       author='Vadim Tregubov',
