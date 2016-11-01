@@ -32,42 +32,43 @@ class BaseMethod(object):
         self.settings = None
         self.description = description
 
-    def process_request(self, request):
+    def process_request(self, multi):
         #Override it for your purposes
         params = {}
-
-        for k in set(request.GET.keys()):
-            v = request.GET.getall(k)
+        # Here we convert a MultiDict to simple python dict.py
+        for k in set(multi.keys()):
+            v = multi.getall(k)
             params.update({k: v if len(v) > 1 else v[0]})
-
-        if request.match_info:
-            params.update(request.match_info.copy())
-
         return params
 
     async def from_http(self, request):
-        self.errors = []
-        self.result = []
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
-
-        get_params = self.process_request(request)
-
-        self.limit = request.headers.get('X-Limit') or \
-                     get_int_or_none(get_params.pop('limit', None)) or \
-                     request.app.settings.LIMIT
-        self.offset = request.headers.get('X-Offset') or \
-                      get_int_or_none(get_params.pop('offset', None)) or \
-                      request.app.settings.OFFSET
-
         try:
+            req_params = {}
+            # if GET or DELETE we read a query params
             if request.method in (METH_GET, METH_DELETE):
-                params = self.input_model(get_params)
+                req_params = self.process_request(request.GET)
+            # else we read a POST-data
             elif request.method in (METH_PUT, METH_POST):
                 try:
-                    params = self.input_model(await request.json())
+                    req_params = self.process_request(await request.json())
                 except (ValueError, TypeError):
-                    params = self.input_model(await request.post())
+                    req_params = self.process_request(await request.post())
+
+            # Here we add or owerride params by PATH-params.
+            # If it exist
+            if request.match_info:
+                req_params.update(request.match_info.copy())
+
+            self.limit = get_int_or_none(request.headers.get('X-Limit')) or \
+                         get_int_or_none(req_params.pop('limit', None)) or \
+                         get_int_or_none(request.app.settings.LIMIT)
+            self.offset = get_int_or_none(request.headers.get('X-Offset')) or \
+                          get_int_or_none(req_params.pop('offset', None)) or \
+                          get_int_or_none(request.app.settings.OFFSET)
+
+            params = self.input_model(req_params)
             params.validate()
             self.params = params.to_primitive()
         except (ModelConversionError, ConversionError, DataError) as exc:
@@ -85,6 +86,9 @@ class BaseMethod(object):
                     elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
                         errors.append({k: [x.summary for x in v.messages]})
             raise BadRequestException(message=errors)
+
+        self.errors = []
+        self.result = []
         self.app = request.app
         self.settings = request.app.settings
 

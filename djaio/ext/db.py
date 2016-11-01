@@ -10,12 +10,12 @@ class DB:
         self.config = config
         self.dbs = {}
 
-    async def init(self):
+    async def init(self, loop=None):
         for _key, _creds in self.config.items():
             self.dbs[_key] = {}
             for _role, _dsn in _creds.items():
                 self.dbs[_key][_role] = await aiopg.create_pool(
-                    _dsn, minsize=1, maxsize=10, timeout=5
+                    _dsn, minsize=1, maxsize=10, timeout=5, loop=loop
                 )
 
     async def shutdown(self, app):
@@ -62,7 +62,7 @@ class DB:
                     data = await cursor.fetchall()
                 else:
                     cursor.connection.commit()
-                    data = await cursor.rowcount()
+                    data = cursor.rowcount
         return data
 
 
