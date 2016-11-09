@@ -20,12 +20,13 @@ class Djaio(object):
         if subcommand == 'runserver':
             try:
                 host, port = self.argv[2].split(':')
+                port = int(port)
                 if not port:
-                    port = '8080'
+                    port = 8080
             except (IndexError, ValueError):
                 print('WARNING! Incorrect host:port - using default settings.')
                 host = '0.0.0.0'
-                port = '8080'
+                port = 8080
             web.run_app(self.app, host=host, port=port)
 
         elif subcommand == 'help':
