@@ -7,7 +7,7 @@ from aiohttp.hdrs import (
     METH_PUT,
     METH_DELETE
 )
-from aiohttp import web
+from aiohttp import web, MultiDictProxy
 from djaio.core.exceptions import BadRequestException
 from djaio.core.models import NullInput, NullOutput
 
@@ -22,7 +22,7 @@ class BaseMethod(object):
         self.output_model = output_model
         self.total = None
         self.success = None
-        self.errors = []
+        self.errors = None
         self.params = None
         self.output = None
         self.pagination = None
@@ -36,12 +36,27 @@ class BaseMethod(object):
         #Override it for your purposes
         params = {}
         # Here we convert a MultiDict to simple python dict.py
-        for k in set(multi.keys()):
-            v = multi.getall(k)
-            params.update({k: v if len(v) > 1 else v[0]})
+        if isinstance(multi, MultiDictProxy):
+            for k in set(multi.keys()):
+                v = multi.getall(k)
+                params[k] = v if len(v) > 1 else v[0]
+        else:
+            params = multi
         return params
 
+    def prepare_query_keys(self, req_params):
+        return {k: req_params.get(k,None) for k in self.input_model.fields}
+
+
     async def from_http(self, request):
+        self.total = None
+        self.success = None
+        self.errors = []
+        self.params = None
+        self.output = None
+        self.pagination = None
+        self.limit = None
+        self.offset = None
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
         try:
@@ -68,6 +83,9 @@ class BaseMethod(object):
                           get_int_or_none(req_params.pop('offset', None)) or \
                           get_int_or_none(request.app.settings.OFFSET)
 
+            #Taking only model fields keys from query params
+            req_params = self.prepare_query_keys(req_params)
+
             params = self.input_model(req_params)
             params.validate()
             self.params = params.to_primitive()
@@ -77,17 +95,20 @@ class BaseMethod(object):
                 errors = [x.summary for x in exc.messages]
             else:
                 for k, v in exc.messages.items():
-
                     if isinstance(v, dict):
                         for _, error in v.items():
-                            if isinstance(error, ConversionError):
+                            if isinstance(error, ConversionError) or isinstance(error, ValidationError):
                                 errors.append({k: [x.summary for x in error.messages]})
 
                     elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
                         errors.append({k: [x.summary for x in v.messages]})
+
+                    elif isinstance(v, list):
+                        errors.append({k: [x.summary for x in v]})
+                    elif isinstance(v, str):
+                        errors.append({k: v})
             raise BadRequestException(message=errors)
 
-        self.errors = []
         self.result = []
         self.app = request.app
         self.settings = request.app.settings

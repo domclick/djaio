@@ -62,16 +62,14 @@ class JsonView(web.View):
     put_method = None
     delete_method = None
 
-    empty_response = {
-        'result': None,
-        'success': False
-    }
-
     async def _process_request(self, method, default_status=200):
         if not method:
             raise web.HTTPMethodNotAllowed
 
-        response = self.empty_response
+        response = {
+            'result': None,
+            'success': False
+        }
         status = default_status
 
         try:
