@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import warnings
+
 import aiopg
 from psycopg2.extras import DictCursor
 from typing import List, Dict
@@ -40,6 +42,7 @@ class DB:
         :param _type:
         :return:
         """
+        warnings.warn("Use single methods!", DeprecationWarning)
 
         if _type not in ('select', 'insert', 'update', 'delete'):
             raise RuntimeError(
@@ -63,6 +66,56 @@ class DB:
                 else:
                     cursor.connection.commit()
                     data = cursor.rowcount
+        return data
+
+    async def select(self, db_name: str, query:str, values: List):
+        return await self._execute(db_name, query, values, 'select')
+
+    async def insert(self, db_name: str, query:str, values: List, returning:bool = False):
+        return await self._execute(db_name, query, values, 'insert', returning)
+
+    async def update(self, db_name: str, query:str, values: List, returning:bool = False):
+        return await self._execute(db_name, query, values, 'update', returning)
+
+
+    async def delete(self, db_name: str, query:str, values: List):
+        return await self._execute(db_name, query, values, 'delete')
+
+
+    async def _execute(self, db_name: str, query: str, values: List, _type: str, returning: bool = False):
+        """
+        Execute SQL query in connection pool
+        :param db_name:
+        :param query:
+        :param values:
+        :param _type:
+        :return:
+        """
+
+        if _type not in ('select', 'insert', 'update', 'delete'):
+            raise RuntimeError(
+                'Wrong request type {}'.format(_type)
+            )
+        if not self.dbs[db_name]['master']:
+            raise RuntimeError(
+                'db {} master is not initialized'.format(db_name)
+            )
+
+        pool = self.dbs[db_name]['master']
+        if _type == 'select' and 'slave' in self.dbs[db_name]:
+            pool = self.dbs[db_name]['slave']
+
+        async with pool.acquire() as conn:
+            async with conn.cursor(cursor_factory=DictCursor) as cursor:
+                await cursor.execute(query, values)
+                if _type == 'select':
+                    return await cursor.fetchall()
+                else:
+                    cursor.connection.commit()
+                    if returning:
+                        data = await cursor.fetchone()
+                    else:
+                        data = cursor.rowcount
         return data
 
 
