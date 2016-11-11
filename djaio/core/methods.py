@@ -63,7 +63,7 @@ class BaseMethod(object):
             req_params = {}
             # if GET or DELETE we read a query params
             if request.method in (METH_GET, METH_DELETE):
-                req_params = self.process_request(request.rel_url.query)
+                req_params = self.process_request(request.GET)
             # else we read a POST-data
             elif request.method in (METH_PUT, METH_POST):
                 try:
