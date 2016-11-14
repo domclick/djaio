@@ -31,7 +31,6 @@ class BaseMethod(object):
         self.app = None
         self.settings = None
         self.description = description
-        self.header_params = None
 
     def process_request(self, multi):
         #Override it for your purposes
@@ -58,7 +57,6 @@ class BaseMethod(object):
         self.pagination = None
         self.limit = None
         self.offset = None
-        self.header_params = None
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
         try:
