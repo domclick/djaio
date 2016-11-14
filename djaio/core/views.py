@@ -71,7 +71,6 @@ class JsonView(web.View):
             'success': False
         }
         status = default_status
-
         try:
             await method.from_http(self.request)
             response = await method.get_output()
@@ -99,7 +98,7 @@ class JsonView(web.View):
             error = response.get('errors', [{}])[0]
             status = 500 if isinstance(error, str) else error.get('code', default_status)
 
-        return web.json_response(response, status=status)
+        return web.json_response(response, status=status, headers = method.header_params)
 
     async def get(self):
         return await self._process_request(self.get_method)
