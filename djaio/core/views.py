@@ -62,6 +62,21 @@ class JsonView(web.View):
     put_method = None
     delete_method = None
 
+    _response = None
+    location_url_name = None
+
+    def _set_location_to_response(self, resp):
+        result = self._response.get('result')
+        if result and len(result) > 0:
+            resp.headers.add('Location', self.reverse_url(self.location_url_name, parts=result[0]))
+
+        return resp
+
+    def reverse_url(self, url_name:str=None, parts:dict=None, query:dict=None):
+        if not url_name:
+            url_name = self.request.app.urls[self.__class__.__name__]
+        return self.request.app.router[url_name].url(parts=parts, query=query)
+
     async def _process_request(self, method, default_status=200):
         if not method:
             raise web.HTTPMethodNotAllowed
@@ -71,7 +86,6 @@ class JsonView(web.View):
             'success': False
         }
         status = default_status
-
         try:
             await method.from_http(self.request)
             response = await method.get_output()
@@ -99,16 +113,19 @@ class JsonView(web.View):
             error = response.get('errors', [{}])[0]
             status = 500 if isinstance(error, str) else error.get('code', default_status)
 
+        self._response = response
         return web.json_response(response, status=status)
 
     async def get(self):
         return await self._process_request(self.get_method)
 
     async def post(self):
-        return await self._process_request(self.post_method, default_status=201)
+        resp = self._set_location_to_response(await self._process_request(self.post_method, default_status=201))
+        return resp
 
     async def put(self):
-        return await self._process_request(self.put_method)
+        resp = self._set_location_to_response(await self._process_request(self.put_method))
+        return resp
 
     async def delete(self):
         return await self._process_request(self.delete_method, default_status=204)
