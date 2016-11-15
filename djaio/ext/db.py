@@ -7,7 +7,6 @@ from typing import List, Dict
 
 
 class DB:
-
     def __init__(self, config: Dict):
         self.config = config
         self.dbs = {}
@@ -68,27 +67,33 @@ class DB:
                     data = cursor.rowcount
         return data
 
-    async def select(self, db_name: str, query:str, values: List):
-        return await self._execute(db_name, query, values, 'select')
+    async def select(self, query: str, values: List, db_name: str = 'default'):
+        return await self._execute(query=query, values=values, _type='select',
+                                   db_name=db_name)
 
-    async def insert(self, db_name: str, query:str, values: List, returning:bool = False):
-        return await self._execute(db_name, query, values, 'insert', returning)
+    async def insert(self, query: str, values: List,
+                     db_name: str = 'default', returning: bool = False):
+        return await self._execute(query=query, values=values, _type='insert',
+                                   db_name=db_name, returning=returning)
 
-    async def update(self, db_name: str, query:str, values: List, returning:bool = False):
-        return await self._execute(db_name, query, values, 'update', returning)
+    async def update(self, query: str, values: List,
+                     db_name: str = 'default', returning: bool = False):
+        return await self._execute(query=query, values=values, _type='update',
+                                   db_name=db_name, returning=returning)
 
+    async def delete(self, query: str, values: List, db_name: str = 'default'):
+        return await self._execute(query=query, values=values, _type='delete',
+                                   db_name=db_name)
 
-    async def delete(self, db_name: str, query:str, values: List):
-        return await self._execute(db_name, query, values, 'delete')
-
-
-    async def _execute(self, db_name: str, query: str, values: List, _type: str, returning: bool = False):
+    async def _execute(self, query: str, values: List, _type: str,
+                       db_name: str = 'default', returning: bool = False):
         """
         Execute SQL query in connection pool
-        :param db_name:
         :param query:
         :param values:
         :param _type:
+        :param db_name:
+        :param returning:
         :return:
         """
 

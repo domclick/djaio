@@ -11,7 +11,9 @@ def url(method, path, handler, name=None):
 
 
 def setup(app):
+    app.urls = {}
     for url in urls:
+        app.urls[url.handler.__name__] = url.name
         app.router.add_route(url.method, url.path, url.handler, name=url.name)
 
 

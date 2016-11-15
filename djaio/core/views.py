@@ -72,8 +72,10 @@ class JsonView(web.View):
 
         return resp
 
-    def reverse_url(self, namespace:str, parts:dict=None, query:dict=None):
-        return self.request.app.router[namespace].url(parts=parts, query=query)
+    def reverse_url(self, url_name:str=None, parts:dict=None, query:dict=None):
+        if not url_name:
+            url_name = self.request.app.urls[self.__class__.__name__]
+        return self.request.app.router[url_name].url(parts=parts, query=query)
 
     async def _process_request(self, method, default_status=200):
         if not method:
