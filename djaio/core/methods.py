@@ -40,8 +40,10 @@ class BaseMethod(object):
             for k in set(multi.keys()):
                 v = multi.getall(k)
                 params[k] = v if len(v) > 1 else v[0]
-        else:
+        elif isinstance(multi, dict):
             params = multi
+        else:
+            raise BadRequestException(message='request params must be a dict or MultiDict')
         return params
 
     async def from_http(self, request):
