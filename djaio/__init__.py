@@ -12,6 +12,24 @@ class Djaio(object):
         if callable(custom_init):
             custom_init(self.app)
 
+        self.app.on_shutdown.append(self.__shutdown)
+        self.app.on_cleanup.append(self.__cleanup)
+
+        self.__state_shutdown_complete = False
+        self.__state_cleanup_complete = False
+
+    def __shutdown(self, app):
+        self.__state_shutdown_complete = True
+
+    def __cleanup(self, app):
+        self.__state_cleanup_complete = True
+
+    def __del__(self):
+        if not self.__state_shutdown_complete:
+            self.app.loop.run_until_complete(self.app.shutdown())
+        if not self.__state_cleanup_complete:
+            self.app.loop.run_until_complete(self.app.cleanup())
+
     def run(self):
         try:
             subcommand = self.argv[1]
