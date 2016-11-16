@@ -43,7 +43,7 @@ class BaseMethod(object):
         elif isinstance(multi, dict):
             params = multi
         else:
-            raise BadRequestException(message='request params must be a dict or MultiDict')
+            raise BadRequestException(message='request params must be a dict-like object')
         return params
 
     async def from_http(self, request):
