@@ -1,22 +1,20 @@
 import sys
-import asyncio
 from aiohttp import web
 from djaio.core.server import init_app
 
 
 class Djaio(object):
-
     def __init__(self, custom_init=None, loop=None):
         self.argv = sys.argv
         self.app = init_app(loop=loop)
         if callable(custom_init):
             custom_init(self.app)
 
-        self.app.on_shutdown.append(self.__shutdown)
-        self.app.on_cleanup.append(self.__cleanup)
-
         self.__state_shutdown_complete = False
         self.__state_cleanup_complete = False
+
+        self.app.on_shutdown.append(self.__shutdown)
+        self.app.on_cleanup.append(self.__cleanup)
 
     def __shutdown(self, app):
         self.__state_shutdown_complete = True
@@ -35,6 +33,7 @@ class Djaio(object):
             subcommand = self.argv[1]
         except IndexError:
             subcommand = 'help'
+
         if subcommand == 'runserver':
             try:
                 host, port = self.argv[2].split(':')
@@ -49,7 +48,7 @@ class Djaio(object):
 
         elif subcommand == 'help':
             print('=' * 60)
-            print('Usage: {} <command> <options>'.format(self.argv[0].rsplit('/', 1)[1]))
+            print('Usage: {} <command> <options>'.format(self.argv[0].rsplit('/', 1)[-1]))
             print('Available commands:')
             print(' * help - shows this message')
             print(' * runserver host:port - runs web server')
