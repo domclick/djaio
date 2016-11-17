@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 base = os.path.dirname(os.path.abspath(__file__))
 
 install_requires = [
-    'aiohttp',
+    'aiohttp==1.0.5',
     'aiohttp_jinja2',
     'asyncio',
     'aiohttp_debugtoolbar',
@@ -20,9 +20,8 @@ tests_require = [
 ]
 
 setup(name='djaio',
-      version='0.0.6',
+      version='0.0.9',
       description='Djaio - Django-inspired AsyncIO web framework',
-      long_description='',
       author='Vadim Tregubov',
       author_email='vatregubov@sberned.ru',
       url='https://github.com/Sberned/djaio',

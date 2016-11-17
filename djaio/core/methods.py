@@ -40,13 +40,11 @@ class BaseMethod(object):
             for k in set(multi.keys()):
                 v = multi.getall(k)
                 params[k] = v if len(v) > 1 else v[0]
-        else:
+        elif isinstance(multi, dict):
             params = multi
+        else:
+            raise BadRequestException(message='request params must be a dict-like object')
         return params
-
-    def prepare_query_keys(self, req_params):
-        return {k: req_params.get(k,None) for k in self.input_model.fields}
-
 
     async def from_http(self, request):
         self.total = None
@@ -83,10 +81,7 @@ class BaseMethod(object):
                           get_int_or_none(req_params.pop('offset', None)) or \
                           get_int_or_none(request.app.settings.OFFSET)
 
-            #Taking only model fields keys from query params
-            req_params = self.prepare_query_keys(req_params)
-
-            params = self.input_model(req_params)
+            params = self.input_model(req_params, strict=False)
             params.validate()
             self.params = params.to_primitive()
         except (ModelConversionError, ConversionError, DataError) as exc:
