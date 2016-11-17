@@ -23,10 +23,11 @@ class Djaio(object):
         self.__state_cleanup_complete = True
 
     def __del__(self):
-        if not self.__state_shutdown_complete:
-            self.app.loop.run_until_complete(self.app.shutdown())
-        if not self.__state_cleanup_complete:
-            self.app.loop.run_until_complete(self.app.cleanup())
+        if not self.app.loop.is_closed():
+            if not self.__state_shutdown_complete:
+                self.app.loop.run_until_complete(self.app.shutdown())
+            if not self.__state_cleanup_complete:
+                self.app.loop.run_until_complete(self.app.cleanup())
 
     def run(self):
         try:
