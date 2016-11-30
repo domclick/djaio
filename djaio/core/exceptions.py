@@ -23,7 +23,7 @@ class ObjectAlreadyExistException(BaseApiException):
 
 class ObjectNotFoundException(BaseApiException):
     status_code = 404
-    message = 'Object with ID %s not found'
+    message = 'Object with key %s not found'
 
     def __init__(self, _id, *args, **kwargs):
         self.message = self.message % _id
