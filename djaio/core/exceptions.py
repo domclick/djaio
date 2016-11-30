@@ -22,6 +22,7 @@ class ObjectAlreadyExistException(BaseApiException):
 
 
 class ObjectNotFoundException(BaseApiException):
+    # ToDo rewrite _id to key in next release
     status_code = 404
     message = 'Object with KEY %s not found'
 
