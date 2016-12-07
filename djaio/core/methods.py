@@ -90,10 +90,12 @@ class BaseMethod(object):
                 errors = [x.summary for x in exc.messages]
             else:
                 for k, v in exc.messages.items():
+                    sub_errors = {}
                     if isinstance(v, dict):
-                        for _, error in v.items():
+                        for sub_k, error in v.items():
                             if isinstance(error, ConversionError) or isinstance(error, ValidationError):
-                                errors.append({k: [x.summary for x in error.messages]})
+                                sub_errors[sub_k] = [x.summary for x in error.messages]
+                        errors.append({k: sub_errors})
 
                     elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
                         errors.append({k: [x.summary for x in v.messages]})
