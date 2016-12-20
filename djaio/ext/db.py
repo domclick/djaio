@@ -11,12 +11,12 @@ class DB:
         self.config = config
         self.dbs = {}
 
-    async def init(self, loop=None):
+    async def init(self, minsize=1, maxsize=10, timeout=5, loop=None):
         for _key, _creds in self.config.items():
             self.dbs[_key] = {}
             for _role, _dsn in _creds.items():
                 self.dbs[_key][_role] = await aiopg.create_pool(
-                    _dsn, minsize=1, maxsize=10, timeout=5, loop=loop
+                    _dsn, minsize=minsize, maxsize=maxsize, timeout=timeout, loop=loop
                 )
 
     async def shutdown(self, app):
@@ -125,7 +125,10 @@ class DB:
 
 
 def setup(app):
+    _minsize = getattr(app.settings, 'DB_POOL_MINSIZE', 1)
+    _maxsize = getattr(app.settings, 'DB_POOL_MAXSIZE', 10)
+    _timeout = getattr(app.settings, 'DB_TIMEOUT', 5)
     db = DB(app.settings.DATABASE)
-    app.loop.run_until_complete(db.init())
+    app.loop.run_until_complete(db.init(minsize=_minsize, maxsize=_maxsize, timeout=_timeout))
     app.db = db
     app.on_cleanup.append(db.shutdown)
