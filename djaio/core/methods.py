@@ -127,10 +127,16 @@ class BaseMethod(object):
     async def get_output(self):
         self.result = await self.execute()
         self.output = {
-            'result': [self.output_model(x).to_primitive() for x in self.result],
             'success': not self.errors
         }
-        if self.errors:
+        if not self.errors:
+            if type(self.result) in (list, tuple) or isinstance(self.result, map):
+                self.output['result'] = [self.output_model(x).to_primitive() for x in self.result]
+            elif type(self.result) == dict:
+                self.output['result'] = self.output_model(self.result).to_primitive()
+            else:
+                self.output['result'] = self.result
+        else:
             self.output.update({'errors': self.errors})
         pagination = self.get_pagination()
         if pagination:
