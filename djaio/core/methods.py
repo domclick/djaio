@@ -132,7 +132,7 @@ class BaseMethod(object):
         if not self.errors:
             if type(self.result) in (list, tuple) or isinstance(self.result, map):
                 self.output['result'] = [self.output_model(x).to_primitive() for x in self.result]
-            elif type(self.result) == dict:
+            elif type(self.result) == dict and self.result:
                 self.output['result'] = self.output_model(self.result).to_primitive()
             else:
                 self.output['result'] = self.result
