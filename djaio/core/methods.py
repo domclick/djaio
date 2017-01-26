@@ -40,8 +40,10 @@ class BaseMethod(object):
             for k in set(multi.keys()):
                 v = multi.getall(k)
                 params[k] = v if len(v) > 1 else v[0]
-        else:
+        elif isinstance(multi, dict):
             params = multi
+        else:
+            raise BadRequestException(message='request params must be a dict-like object')
         return params
 
     async def from_http(self, request):
@@ -88,10 +90,12 @@ class BaseMethod(object):
                 errors = [x.summary for x in exc.messages]
             else:
                 for k, v in exc.messages.items():
+                    sub_errors = {}
                     if isinstance(v, dict):
-                        for _, error in v.items():
+                        for sub_k, error in v.items():
                             if isinstance(error, ConversionError) or isinstance(error, ValidationError):
-                                errors.append({k: [x.summary for x in error.messages]})
+                                sub_errors[sub_k] = [x.summary for x in error.messages]
+                        errors.append({k: sub_errors})
 
                     elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
                         errors.append({k: [x.summary for x in v.messages]})
@@ -123,10 +127,16 @@ class BaseMethod(object):
     async def get_output(self):
         self.result = await self.execute()
         self.output = {
-            'result': [self.output_model(x, strict=False).to_primitive() for x in self.result],
             'success': not self.errors
         }
-        if self.errors:
+        if not self.errors:
+            if type(self.result) in (list, tuple) or isinstance(self.result, map):
+                self.output['result'] = [self.output_model(x, strict=False).to_primitive() for x in self.result]
+            elif type(self.result) == dict and self.result:
+                self.output['result'] = self.output_model(self.result, strict=False).to_primitive()
+            else:
+                self.output['result'] = self.result
+        else:
             self.output.update({'errors': self.errors})
         pagination = self.get_pagination()
         if pagination:

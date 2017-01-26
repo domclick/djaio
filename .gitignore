@@ -13,3 +13,4 @@ djaio/tests/settings/base.py
 docs/_build
 docs/_static
 docs/_templates
+dist/

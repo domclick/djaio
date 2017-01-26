@@ -48,7 +48,7 @@ class TemplateView(BaseContextmixin, web.View):
         return aiohttp_jinja2.render_template(
             self.get_template_name(),
             self.request,
-            self.get_context_data()
+            await self.get_context_data()
         )
 
     async def get(self):
