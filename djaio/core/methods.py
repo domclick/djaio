@@ -123,7 +123,7 @@ class BaseMethod(object):
     async def get_output(self):
         self.result = await self.execute()
         self.output = {
-            'result': [self.output_model(x).to_primitive() for x in self.result],
+            'result': [self.output_model(x, strict=False).to_primitive() for x in self.result],
             'success': not self.errors
         }
         if self.errors:
