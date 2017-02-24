@@ -12,6 +12,7 @@ install_requires = [
     'aiohttp_autoreload',
     'schematics>=2.0.0.dev2',
     'aiopg==0.11.0',
+    'ipython==5.3.0',
 ]
 
 tests_require = [

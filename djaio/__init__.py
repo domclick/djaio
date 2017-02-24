@@ -56,6 +56,9 @@ class Djaio(object):
             for key, comm_obj in self.app.commands.items():
                 print(' * {} <options> - {}'.format(key, comm_obj.get('description')))
             print('=' * 60)
+        elif subcommand == 'shell':
+            import IPython
+            IPython.start_ipython(argv=[])
 
         elif subcommand in self.app.commands:
             _args = self.argv[2:]
