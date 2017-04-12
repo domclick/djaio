@@ -149,7 +149,7 @@ class MobileApiJsonView(JsonView):
             raise web.HTTPMethodNotAllowed
 
         response = {
-            'code': 0,
+            'code': 200,
             'data': {}
         }
 
