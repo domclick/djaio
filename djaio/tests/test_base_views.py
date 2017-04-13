@@ -5,7 +5,7 @@ from djaio.core.views import BaseContextmixin, RemoteContextMixin
 
 from djaio.tests import DjaioAppTestCase
 from djaio.tests.data.conf import BLNS
-from djaio.tests.data.views import (TstDefaultView, TstInputViewBasic)
+from djaio.tests.data.views import (TstDefaultView, TstInputViewBasic, TstInputMobileViewBasic)
 
 class TestBaseViews(DjaioAppTestCase):
 
@@ -15,6 +15,7 @@ class TestBaseViews(DjaioAppTestCase):
         app.router.add_get('/test_input', TstInputViewBasic)
         app.router.add_get('/test_input_path/{id}', TstInputViewBasic)
         app.router.add_get('/djaio_app_hello', self.app_hello)
+        app.router.add_get('/mobile/test_input', TstInputMobileViewBasic)
 
     async def app_hello(self, request):
         return web.Response(text='Djaio!')
@@ -95,3 +96,18 @@ class TestBaseViews(DjaioAppTestCase):
                 req = await self.client.request("GET", query_string)
                 req.close()
                 assert (req.status == 400 or req.status == 404)
+
+    @unittest_run_loop
+    async def test_get_input_mobile_view_bad_request(self):
+        req = await self.client.request("GET", "/mobile/test_input")
+        json = await req.json()
+        assert not json.get('data')
+        assert json.get('code') == 400
+        assert json.get('error')
+
+    @unittest_run_loop
+    async def test_get_input_mobile_view_valid_request(self):
+        req = await self.client.request("GET", "/mobile/test_input?id=1")
+        json = await req.json()
+        assert json.get('code') == 200
+        assert json.get('data')

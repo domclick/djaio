@@ -129,3 +129,47 @@ class JsonView(web.View):
 
     async def delete(self):
         return await self._process_request(self.delete_method, default_status=204)
+
+
+class MobileApiJsonView(JsonView):
+
+    def set_errors(self, response, method_errors, exc):
+        if isinstance(method_errors, list):
+            method_errors.append(exc)
+            response['error'] = method_errors[0]
+
+            if len(method_errors) > 1:
+                response['errors'] = method_errors[1:]
+        else:
+            response['error'] = method_errors
+        return response
+
+    async def _process_request(self, method, default_status=200):
+        if not method:
+            raise web.HTTPMethodNotAllowed
+
+        response = {
+            'code': 200,
+            'data': {}
+        }
+
+        try:
+            await method.from_http(self.request)
+            output = await method.get_output()
+            response['data']['result'] = output.get('result')
+            response['data']['pagination'] = output.get('pagination')
+
+        except (
+                ObjectNotFoundException,
+                ObjectAlreadyExistException,
+                BadRequestException
+        ) as exc:
+            response['code'] = exc.status_code
+            self.set_errors(response, method.errors, exc.message)
+
+        except Exception as exc:
+            response['code'] = 500
+            self.set_errors(response, method.errors, str(exc))
+
+        self._response = response
+        return web.json_response(response, status=default_status)
