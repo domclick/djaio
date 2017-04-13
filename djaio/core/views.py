@@ -134,8 +134,8 @@ class JsonView(web.View):
 class MobileApiJsonView(JsonView):
 
     def set_errors(self, response, method_errors, exc):
-        method_errors.append(exc)
         if isinstance(method_errors, list):
+            method_errors.append(exc)
             response['error'] = method_errors[0]
 
             if len(method_errors) > 1:
