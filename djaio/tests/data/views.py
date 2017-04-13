@@ -1,6 +1,6 @@
 from aiohttp import web
 from djaio.core.methods import BaseMethod
-from djaio.core.views import RemoteContextMixin, JsonView
+from djaio.core.views import RemoteContextMixin, JsonView, MobileApiJsonView
 
 from djaio.tests.data.methods import (TstGetMethod, TstPostMethod, TstPutMethod, TstDeleteMethod, TstGetMethodBasic,
                                     TstGetDetailMethod)
@@ -38,3 +38,8 @@ class TstInputDetailView(JsonView):
                                description="""Updates test data""")
 
     delete_method = TstDeleteMethod(input_model=TstInputDetail, description="""Deletes test data""")
+
+
+#Mobile views
+class TstInputMobileViewBasic(MobileApiJsonView):
+    get_method = TstGetMethodBasic(input_model=TstInput, description="""Returns test data""")
