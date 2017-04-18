@@ -119,8 +119,6 @@ class BaseMethod(object):
             'limit': self.limit,
             'offset': self.offset
         }
-        if not self.total:
-            return
         self.pagination = _pagination_object
         return self.pagination
 
