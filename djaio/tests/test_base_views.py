@@ -109,5 +109,5 @@ class TestBaseViews(DjaioAppTestCase):
     async def test_get_input_mobile_view_valid_request(self):
         req = await self.client.request("GET", "/mobile/test_input?id=1")
         json = await req.json()
-        assert json.get('code') == 200
+        assert json.get('code') == 0
         assert json.get('data')
