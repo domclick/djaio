@@ -114,8 +114,13 @@ class BaseMethod(object):
         raise NotImplementedError('Please override `execute()` method.')
 
     def get_pagination(self):
+        total = None
+        if self.result is None:
+            total =0
+        elif isinstance(self.result, list):
+            total = len(self.result)
         _pagination_object = {
-            'total': self.total or len(self.result),
+            'total': self.total or total,
             'limit': self.limit,
             'offset': self.offset
         }
