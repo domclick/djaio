@@ -115,7 +115,7 @@ class BaseMethod(object):
 
     def get_pagination(self):
         _pagination_object = {
-            'total': self.total,
+            'total': self.total or len(self.result),
             'limit': self.limit,
             'offset': self.offset
         }
