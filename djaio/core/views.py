@@ -1,11 +1,9 @@
 #!-*- coding: utf-8 -*-
-import asyncio
 import aiohttp
-from aiohttp import web
-from aiohttp.hdrs import METH_ALL
 import aiohttp_jinja2
+from aiohttp import web
 
-from djaio.core.exceptions import ObjectNotFoundException, ObjectAlreadyExistException, BadRequestException
+from djaio.core.exceptions import BaseApiException
 from djaio.core.utils import gather_map
 
 
@@ -72,7 +70,7 @@ class JsonView(web.View):
 
         return resp
 
-    def reverse_url(self, url_name:str=None, parts:dict=None, query:dict=None):
+    def reverse_url(self, url_name: str = None, parts: dict = None, query: dict = None):
         if not url_name:
             url_name = self.request.app.urls[self.__class__.__name__]
         return self.request.app.router[url_name].url(parts=parts, query=query)
@@ -89,15 +87,7 @@ class JsonView(web.View):
         try:
             await method.from_http(self.request)
             response = await method.get_output()
-        except (
-                ObjectNotFoundException,
-                ObjectAlreadyExistException
-        ) as exc:
-            response['errors'] = method.errors
-            response['errors'].append(exc.to_dict())
-            status = exc.status_code
-
-        except BadRequestException as exc:
+        except BaseApiException as exc:
             response['errors'] = method.errors
             response['errors'].append(exc.to_dict())
             status = exc.status_code
@@ -132,7 +122,6 @@ class JsonView(web.View):
 
 
 class MobileApiJsonView(JsonView):
-
     def set_errors(self, response, method_errors, exc):
         if isinstance(method_errors, list):
             method_errors.append(exc)
@@ -159,11 +148,7 @@ class MobileApiJsonView(JsonView):
             response['data']['result'] = output.get('result')
             response['data']['pagination'] = output.get('pagination')
 
-        except (
-                ObjectNotFoundException,
-                ObjectAlreadyExistException,
-                BadRequestException
-        ) as exc:
+        except BaseApiException as exc:
             response['code'] = exc.status_code
             self.set_errors(response, method.errors, exc.message)
 
