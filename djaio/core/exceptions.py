@@ -37,3 +37,8 @@ class BadRequestException(BaseApiException):
     def __init__(self, *args, **kwargs):
         self.message = kwargs.get('message')
         super().__init__(args, kwargs)
+
+
+class UnauthorizedException(BaseApiException):
+    status_code = 401
+    message = 'Can not authorized with provided data'

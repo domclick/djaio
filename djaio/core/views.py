@@ -5,7 +5,8 @@ from aiohttp import web
 from aiohttp.hdrs import METH_ALL
 import aiohttp_jinja2
 
-from djaio.core.exceptions import ObjectNotFoundException, ObjectAlreadyExistException, BadRequestException
+from djaio.core.exceptions import ObjectNotFoundException, ObjectAlreadyExistException, BadRequestException, \
+    UnauthorizedException
 from djaio.core.utils import gather_map
 
 
@@ -91,7 +92,8 @@ class JsonView(web.View):
             response = await method.get_output()
         except (
                 ObjectNotFoundException,
-                ObjectAlreadyExistException
+                ObjectAlreadyExistException,
+                UnauthorizedException,
         ) as exc:
             response['errors'] = method.errors
             response['errors'].append(exc.to_dict())
@@ -162,7 +164,8 @@ class MobileApiJsonView(JsonView):
         except (
                 ObjectNotFoundException,
                 ObjectAlreadyExistException,
-                BadRequestException
+                BadRequestException,
+                UnauthorizedException
         ) as exc:
             response['code'] = exc.status_code
             self.set_errors(response, method.errors, exc.message)
