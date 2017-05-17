@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 base = os.path.dirname(os.path.abspath(__file__))
 
 install_requires = [
-    'aiohttp==1.0.5',
+    'aiohttp==2.0.7',
     'aiohttp_jinja2',
     'asyncio',
     'aiohttp_debugtoolbar',

@@ -19,16 +19,16 @@ class DjaioAppTestCase(AioHTTPTestCase):
     def init_routes(self, app):
         pass
 
-    def get_app(self, loop):
+    def get_app(self):
         try:
             from app import init_app
             os.environ.setdefault('SETTINGS', 'app.settings.local')
-            djaio = Djaio(custom_init=init_app, loop=loop)
+            djaio = Djaio(custom_init=init_app, loop=self.loop)
             app = djaio.app
             self.DB_CONF = getattr(app.settings, 'TEST_DB', _DB_CONF)
-            self.loop = loop
+            self.loop = self.loop
         except Exception as e:
-            djaio = Djaio(loop=loop)
+            djaio = Djaio(loop=self.loop)
             app = djaio.app
         self.init_routes(app)
         return app
