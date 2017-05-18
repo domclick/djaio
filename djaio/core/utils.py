@@ -15,6 +15,6 @@ async def gather_map(map, coro, *args, **kwargs):
 
 def get_int_or_none(value):
     try:
-        return int(int(re.sub(r'(\D*)$', '', value)))
+        return int(re.sub(r'(\D*)$', '', value))
     except (TypeError, ValueError):
         return None
