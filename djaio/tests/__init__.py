@@ -26,8 +26,7 @@ class DjaioAppTestCase(AioHTTPTestCase):
             djaio = Djaio(custom_init=init_app, loop=self.loop)
             app = djaio.app
             self.DB_CONF = getattr(app.settings, 'TEST_DB', _DB_CONF)
-            self.loop = self.loop
-        except Exception as e:
+        except ImportError as e:
             djaio = Djaio(loop=self.loop)
             app = djaio.app
         self.init_routes(app)
