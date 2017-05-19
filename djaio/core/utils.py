@@ -1,4 +1,5 @@
 #!-*- coding: utf-8 -*-
+import re
 import asyncio
 
 
@@ -14,6 +15,6 @@ async def gather_map(map, coro, *args, **kwargs):
 
 def get_int_or_none(value):
     try:
-        return int(value)
+        return int(re.sub(r'^(\d+)(.*)$', r'\1', value))
     except (TypeError, ValueError):
         return None

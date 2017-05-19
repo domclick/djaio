@@ -5,13 +5,12 @@ from djaio.core.server import init_app
 
 class Djaio(object):
     def __init__(self, custom_init=None, loop=None):
+        self.__state_shutdown_complete = False
+        self.__state_cleanup_complete = False
         self.argv = sys.argv
         self.app = init_app(loop=loop)
         if callable(custom_init):
             custom_init(self.app)
-
-        self.__state_shutdown_complete = False
-        self.__state_cleanup_complete = False
 
         self.app.on_shutdown.append(self.__shutdown)
         self.app.on_cleanup.append(self.__cleanup)
@@ -45,7 +44,7 @@ class Djaio(object):
                 print('WARNING! Incorrect host:port - using default settings.')
                 host = '0.0.0.0'
                 port = 8080
-            web.run_app(self.app, host=host, port=port)
+            web.run_app(self.app, host=host, port=port, loop=self.app.loop)
 
         elif subcommand == 'help':
             print('=' * 60)

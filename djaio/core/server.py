@@ -86,9 +86,9 @@ def init_app(loop=None):
     app = web.Application(
         middlewares=middlewares,
         debug=settings.DEBUG,
-        router=router() if router else None,
-        loop=loop
+        router=router() if router else None
     )
+    app._set_loop(loop)
     app.settings = settings
     discover_urls(app)
     app.commands = get_commands(settings)
