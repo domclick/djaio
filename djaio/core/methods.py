@@ -7,7 +7,8 @@ from aiohttp.hdrs import (
     METH_PUT,
     METH_DELETE
 )
-from aiohttp import web, MultiDictProxy
+from aiohttp import web
+from multidict import MultiDictProxy
 from djaio.core.exceptions import BadRequestException
 from djaio.core.models import NullInput, NullOutput
 
