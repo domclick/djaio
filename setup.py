@@ -10,7 +10,7 @@ install_requires = [
     'asyncio',
     'aiohttp_debugtoolbar==0.4.0',
     'aiohttp_autoreload',
-    'schematics>=2.0.0.dev2',
+    'schematics==2.0.0.a1',
     'aiopg==0.11.0',
     'ipython==5.3.0',
 ]
