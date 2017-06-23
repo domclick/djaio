@@ -15,21 +15,14 @@ _LOGGING = {
     },
     'handlers': {
         'console': {
-            'level':'DEBUG',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'syslog': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.SysLogHandler',
-            'facility': 'local5',
-            'address': '/dev/log',
-            'formatter': 'verbose'
-       },
     },
     'loggers': {
         'djaio_logger': {
-            'handlers': ['console', 'syslog'],
+            'handlers': ['console'],
             'level': 'DEBUG',
         },
     },
