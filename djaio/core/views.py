@@ -1,4 +1,5 @@
 #!-*- coding: utf-8 -*-
+import logging
 import aiohttp
 import aiohttp_jinja2
 from aiohttp import web
@@ -6,6 +7,8 @@ from aiohttp import web
 from djaio.core.exceptions import BaseApiException
 from djaio.core.utils import gather_map
 
+
+logger = logging.getLogger('djaio_logger')
 
 class BaseContextmixin(object):
     async def get_context_data(self, *args, **kwargs):
@@ -91,18 +94,19 @@ class JsonView(web.View):
             response['errors'] = method.errors
             response['errors'].append(exc.to_dict())
             status = exc.status_code
-
+            logger.error(msg=exc.message)
         except Exception as exc:
             response['errors'] = method.errors
             response['errors'].append({
                 'code': 500,
-                'message': str(exc)
+                'message': 'Server error'
             })
             status = 500
+            logger.error(exc)
         if response.get('errors') and status == default_status:
             error = response.get('errors', [{}])[0]
             status = 500 if isinstance(error, str) else error.get('code', default_status)
-
+            logger.error(msg=error.get('message', 'Server error'))
         self._response = response
         return web.json_response(response, status=status)
 

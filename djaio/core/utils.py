@@ -14,6 +14,14 @@ async def gather_map(map, coro, *args, **kwargs):
 
 
 def get_int_or_none(value):
+    """
+    >>> get_int_or_none(123)
+    123
+    >>> get_int_or_none('123asda')
+    123
+    """
+    if isinstance(value, int):
+        return value
     try:
         return int(re.sub(r'^(\d+)(.*)$', r'\1', value))
     except (TypeError, ValueError):
