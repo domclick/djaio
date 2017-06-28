@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import json
 
 from aiohttp.hdrs import (
     METH_GET,
@@ -34,11 +33,11 @@ class BaseMethod(object):
         self.description = description
 
     def process_request(self, multi):
-        #Override it for your purposes
+        # Override it for your purposes
         params = {}
         # Here we convert a MultiDict to simple python dict.py
         if isinstance(multi, MultiDictProxy):
-            for k in set(multi.keys()):
+            for k in multi.keys():
                 v = multi.getall(k)
                 params[k] = v if len(v) > 1 else v[0]
         elif isinstance(multi, dict):
@@ -56,8 +55,10 @@ class BaseMethod(object):
         self.pagination = None
         self.limit = None
         self.offset = None
+
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
+
         try:
             req_params = {}
             # if GET or DELETE we read a query params
@@ -91,20 +92,21 @@ class BaseMethod(object):
                 errors = [x.summary for x in exc.messages]
             else:
                 for k, v in exc.messages.items():
-                    sub_errors = {}
                     if isinstance(v, dict):
+                        sub_errors = {}
                         for sub_k, error in v.items():
-                            if isinstance(error, ConversionError) or isinstance(error, ValidationError):
+                            if isinstance(error, (ConversionError, ValidationError)):
                                 sub_errors[sub_k] = [x.summary for x in error.messages]
                         errors.append({k: sub_errors})
 
-                    elif isinstance(v, ConversionError) or isinstance(v, ValidationError):
+                    elif isinstance(v, (ConversionError, ValidationError)):
                         errors.append({k: [x.summary for x in v.messages]})
 
                     elif isinstance(v, list):
                         errors.append({k: [x.summary for x in v]})
                     elif isinstance(v, str):
                         errors.append({k: v})
+
             raise BadRequestException(message=errors)
 
         self.result = []
@@ -115,33 +117,38 @@ class BaseMethod(object):
         raise NotImplementedError('Please override `execute()` method.')
 
     def get_pagination(self):
-        _pagination_object = {
+        if self.total is None:
+            return
+
+        pagination = {
             'total': self.total,
             'limit': self.limit,
             'offset': self.offset
         }
-        if not self.total:
-            return
-        self.pagination = _pagination_object
-        return self.pagination
+
+        self.pagination = pagination
+        return pagination
 
     async def get_output(self):
         self.result = await self.execute()
         self.output = {
             'success': not self.errors
         }
-        if not self.errors:
-            if type(self.result) in (list, tuple) or isinstance(self.result, map):
+
+        if self.errors:
+            self.output['errors'] = self.errors
+        else:
+            if isinstance(self.result, (list, tuple, map)):
                 self.output['result'] = [self.output_model(x, strict=False).to_primitive() for x in self.result]
-            elif type(self.result) == dict and self.result:
+            elif self.result and isinstance(self.result, dict):
                 self.output['result'] = self.output_model(self.result, strict=False).to_primitive()
             else:
                 self.output['result'] = self.result
-        else:
-            self.output.update({'errors': self.errors})
+
         pagination = self.get_pagination()
         if pagination:
-            self.output.update({'pagination': pagination})
+            self.output['pagination'] = pagination
+
         return self.output
 
 
