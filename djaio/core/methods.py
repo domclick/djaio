@@ -37,7 +37,7 @@ class BaseMethod(object):
         params = {}
         # Here we convert a MultiDict to simple python dict.py
         if isinstance(multi, MultiDictProxy):
-            for k in multi.keys():
+            for k in set(multi.keys()):
                 v = multi.getall(k)
                 params[k] = v if len(v) > 1 else v[0]
         elif isinstance(multi, dict):
