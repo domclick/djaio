@@ -1,6 +1,7 @@
 import sys
 from aiohttp import web
 from djaio.core.server import init_app
+from djaio.core import logs
 
 
 class Djaio(object):
@@ -11,6 +12,7 @@ class Djaio(object):
         self.app = init_app(loop=loop)
         if callable(custom_init):
             custom_init(self.app)
+            logs.setup(self.app)
 
         self.app.on_shutdown.append(self.__shutdown)
         self.app.on_cleanup.append(self.__cleanup)
