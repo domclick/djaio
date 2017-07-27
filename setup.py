@@ -5,14 +5,16 @@ from setuptools import setup, find_packages
 base = os.path.dirname(os.path.abspath(__file__))
 
 install_requires = [
-    'aiohttp==2.0.7',
+    'aiohttp==2.2.3',
     'aiohttp_jinja2',
     'asyncio',
     'aiohttp_debugtoolbar==0.4.0',
     'aiohttp_autoreload',
-    'schematics==2.0.0a1',
-    'aiopg==0.11.0',
+    'schematics==2.0.1',
+    'aiopg==0.13.0',
     'ipython==5.3.0',
+    'raven==6.1.0',
+    'raven-aiohttp==0.5.0',
 ]
 
 tests_require = [
