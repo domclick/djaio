@@ -28,8 +28,7 @@ class DjaioSentryHandler(SentryHandler):
         }
 
 
-def setup(app):
-    version = getattr(app.settings, 'VERSION', 1)
+def setup(app, version:str='undefined'):
     environment = getattr(app.settings, 'ROLE', None) or os.environ.get('ROLE')
     dsn = getattr(app.settings, 'SENTRY_DSN', None)
     tags = getattr(app.settings, 'SENTRY_TAGS', None)
