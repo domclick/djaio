@@ -7,8 +7,8 @@ from aiohttp import web
 from djaio.core.exceptions import BaseApiException
 from djaio.core.utils import gather_map
 
-
 logger = logging.getLogger('djaio_logger')
+
 
 class BaseContextmixin(object):
     async def get_context_data(self, *args, **kwargs):
@@ -94,7 +94,8 @@ class JsonView(web.View):
             response['errors'] = method.errors
             response['errors'].append(exc.to_dict())
             status = exc.status_code
-            logger.error(msg=exc.message)
+            if not status or status >= 500:
+                logger.warning(msg=exc.message)
         except Exception as exc:
             response['errors'] = method.errors
             response['errors'].append({
@@ -102,11 +103,17 @@ class JsonView(web.View):
                 'message': 'Server error'
             })
             status = 500
-            logger.error(exc)
+            logger.exception(exc, extra={'request': self.request,
+                                         'params': method.params,
+                                         'errors': method.errors})
+
         if response.get('errors') and status == default_status:
             error = response.get('errors', [{}])[0]
             status = 500 if isinstance(error, str) else error.get('code', default_status)
-            logger.error(msg=error.get('message', 'Server error'))
+            logger.error(msg=error.get('message', 'Server error'),
+                         extra={'request': self.request,
+                                'params': method.params,
+                                'errors': response['errors']})
         self._response = response
         return web.json_response(response, status=status)
 
