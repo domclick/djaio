@@ -1,22 +1,30 @@
 # -*- coding: utf-8 -*-
+from typing import Tuple, List
 
+from aiohttp import web
 from aiohttp.hdrs import (
     METH_GET,
     METH_POST,
     METH_PUT,
     METH_DELETE
 )
-from aiohttp import web
 from multidict import MultiDictProxy
+from schematics.exceptions import ModelConversionError, ConversionError, DataError, ValidationError
+
 from djaio.core.exceptions import BadRequestException
 from djaio.core.models import NullInput, NullOutput
-
 from djaio.core.utils import get_int_or_none
-from schematics.exceptions import ModelConversionError, ConversionError, DataError, ValidationError
 
 
 class BaseMethod(object):
-    def __init__(self, input_model=NullInput, output_model=NullOutput, description=None):
+    def __init__(
+            self,
+            input_model=NullInput,
+            output_model=NullOutput,
+            description: str = None,
+            pre_hooks: (List, Tuple) = None,
+            post_hooks: (List, Tuple) = None
+    ):
         self.result = None
         self.input_model = input_model
         self.output_model = output_model
@@ -31,6 +39,8 @@ class BaseMethod(object):
         self.app = None
         self.settings = None
         self.description = description
+        self.pre_hooks = pre_hooks
+        self.post_hooks = post_hooks
 
     def process_request(self, multi):
         # Override it for your purposes
@@ -118,6 +128,18 @@ class BaseMethod(object):
         self.app = request.app
         self.settings = request.app.settings
 
+    async def call_pre_hooks(self):
+        if self.pre_hooks is not None:
+            for coro in self.pre_hooks:
+                func, kwargs = coro
+                await func(method=self, **kwargs)
+
+    async def call_post_hooks(self, response):
+        if self.post_hooks is not None:
+            for coro in self.post_hooks:
+                func, kwargs = coro
+                await func(method=self, response=response, **kwargs)
+
     async def execute(self):
         raise NotImplementedError('Please override `execute()` method.')
 
@@ -158,7 +180,6 @@ class BaseMethod(object):
 
 
 class MobileBaseMethod(BaseMethod):
-
     async def execute(self):
         raise NotImplementedError('Please override `execute()` method.')
 

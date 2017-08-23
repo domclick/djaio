@@ -89,20 +89,26 @@ class JsonView(web.View):
         status = default_status
         try:
             await method.from_http(self.request)
+            await method.call_pre_hooks()
             response = await method.get_output()
+            await method.call_post_hooks(response)
         except BaseApiException as exc:
-            response['errors'] = method.errors
+            response['errors'] = method.errors or []
             response['errors'].append(exc.to_dict())
             status = exc.status_code
             if not status or status >= 500:
                 logger.warning(msg=exc.message)
         except Exception as exc:
-            response['errors'] = method.errors
+            status = getattr(exc, 'status_code', 500)
+            message = getattr(exc, 'message', None)
+            response['errors'] = method.errors or []
             response['errors'].append({
-                'code': 500,
+                'code': status,
                 'message': 'Server error'
             })
-            status = 500
+            status = status
+            if message:
+                method.errors.append(message)
             logger.exception(exc, extra={'request': self.request,
                                          'params': method.params,
                                          'errors': method.errors})
