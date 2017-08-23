@@ -59,6 +59,11 @@ class BaseMethod(object):
         if not isinstance(request, web.Request):
             raise web.HTTPBadRequest()
 
+        self.meta = {
+            'cookies': getattr(request, 'cookies', {}),
+            'headers': getattr(request, 'headers', {})
+        }
+
         try:
             req_params = {}
             # if GET or DELETE we read a query params
