@@ -42,3 +42,16 @@ class BadRequestException(BaseApiException):
 class UnauthorizedException(BaseApiException):
     status_code = 401
     message = 'Can not authorized with provided data'
+
+
+class ForbiddenException(BaseApiException):
+    status_code = 403
+
+    def __init__(self, *args, **kwargs):
+        self.message = kwargs.get('message', 'forbidden')
+        super().__init__(args, kwargs)
+
+
+class TooManyRequestsException(BaseApiException):
+    status_code = 429
+    message = 'too many requests'
