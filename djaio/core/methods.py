@@ -131,14 +131,12 @@ class BaseMethod(object):
     async def call_pre_hooks(self):
         if self.pre_hooks is not None:
             for coro in self.pre_hooks:
-                func, kwargs = coro
-                await func(method=self, **kwargs)
+                await coro(method=self)
 
     async def call_post_hooks(self, response):
         if self.post_hooks is not None:
             for coro in self.post_hooks:
-                func, kwargs = coro
-                await func(method=self, response=response, **kwargs)
+                await coro(method=self, response=response)
 
     async def execute(self):
         raise NotImplementedError('Please override `execute()` method.')
