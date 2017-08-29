@@ -161,7 +161,9 @@ class MobileApiJsonView(JsonView):
 
         try:
             await method.from_http(self.request)
+            await method.call_pre_hooks()
             output = await method.get_output()
+            await method.call_post_hooks(response=output)
             response['data']['result'] = output.get('result')
             response['data']['pagination'] = output.get('pagination')
 
