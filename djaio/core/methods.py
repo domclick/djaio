@@ -16,18 +16,14 @@ from djaio.core.models import NullInput, NullOutput
 from djaio.core.utils import get_int_or_none
 
 
-class BaseMethod(object):
+class AgnosticMethod(object):
     def __init__(
             self,
-            input_model=NullInput,
-            output_model=NullOutput,
             description: str = None,
             pre_hooks: (List, Tuple) = None,
             post_hooks: (List, Tuple) = None
     ):
         self.result = None
-        self.input_model = input_model
-        self.output_model = output_model
         self.total = None
         self.success = None
         self.errors = None
@@ -41,6 +37,7 @@ class BaseMethod(object):
         self.description = description
         self.pre_hooks = pre_hooks
         self.post_hooks = post_hooks
+        self.meta = {}
 
     def process_request(self, multi):
         # Override it for your purposes
@@ -55,6 +52,9 @@ class BaseMethod(object):
         else:
             raise BadRequestException(message='request params must be a dict-like object')
         return params
+
+    def validate_params(self, raw_params):
+        raise NotImplementedError('Please override `validate_params()` method.')
 
     async def from_http(self, request):
         self.total = None
@@ -73,57 +73,30 @@ class BaseMethod(object):
             'cookies': getattr(request, 'cookies', {}),
             'headers': getattr(request, 'headers', {})
         }
+        req_params = {}
+        # if GET or DELETE we read a query params
+        if request.method in (METH_GET, METH_DELETE):
+            req_params = self.process_request(request.GET)
+        # else we read a POST-data
+        elif request.method in (METH_PUT, METH_POST):
+            try:
+                req_params = self.process_request(await request.json())
+            except (ValueError, TypeError):
+                req_params = self.process_request(await request.post())
 
-        try:
-            req_params = {}
-            # if GET or DELETE we read a query params
-            if request.method in (METH_GET, METH_DELETE):
-                req_params = self.process_request(request.GET)
-            # else we read a POST-data
-            elif request.method in (METH_PUT, METH_POST):
-                try:
-                    req_params = self.process_request(await request.json())
-                except (ValueError, TypeError):
-                    req_params = self.process_request(await request.post())
+        # Here we add or override params by PATH-params.
+        # If it exist
+        if request.match_info:
+            req_params.update(request.match_info.copy())
 
-            # Here we add or owerride params by PATH-params.
-            # If it exist
-            if request.match_info:
-                req_params.update(request.match_info.copy())
+        self.limit = get_int_or_none(request.headers.get('X-Limit')) or \
+                     get_int_or_none(req_params.pop('limit', None)) or \
+                     get_int_or_none(request.app.settings.LIMIT)
+        self.offset = get_int_or_none(request.headers.get('X-Offset')) or \
+                      get_int_or_none(req_params.pop('offset', None)) or \
+                      get_int_or_none(request.app.settings.OFFSET)
 
-            self.limit = get_int_or_none(request.headers.get('X-Limit')) or \
-                         get_int_or_none(req_params.pop('limit', None)) or \
-                         get_int_or_none(request.app.settings.LIMIT)
-            self.offset = get_int_or_none(request.headers.get('X-Offset')) or \
-                          get_int_or_none(req_params.pop('offset', None)) or \
-                          get_int_or_none(request.app.settings.OFFSET)
-
-            params = self.input_model(req_params, strict=False)
-            params.validate()
-            self.params = params.to_primitive()
-        except (ModelConversionError, ConversionError, DataError) as exc:
-            errors = []
-            if isinstance(exc.messages, list):
-                errors = [x.summary for x in exc.messages]
-            else:
-                for k, v in exc.messages.items():
-                    if isinstance(v, dict):
-                        sub_errors = {}
-                        for sub_k, error in v.items():
-                            if isinstance(error, (ConversionError, ValidationError)):
-                                sub_errors[sub_k] = [x.summary for x in error.messages]
-                        errors.append({k: sub_errors})
-
-                    elif isinstance(v, (ConversionError, ValidationError)):
-                        errors.append({k: [x.summary for x in v.messages]})
-
-                    elif isinstance(v, list):
-                        errors.append({k: [x.summary for x in v]})
-                    elif isinstance(v, str):
-                        errors.append({k: v})
-
-            raise BadRequestException(message=errors)
-
+        self.params = self.validate_params(req_params)
         self.result = []
         self.app = request.app
         self.settings = request.app.settings
@@ -163,18 +136,70 @@ class BaseMethod(object):
         if self.errors:
             self.output['errors'] = self.errors
         else:
-            if isinstance(self.result, (list, tuple, map)):
-                self.output['result'] = [self.output_model(x, strict=False).to_primitive() for x in self.result]
-            elif self.result and isinstance(self.result, dict):
-                self.output['result'] = self.output_model(self.result, strict=False).to_primitive()
-            else:
-                self.output['result'] = self.result
+            self.output['result'] = self.serialize_result()
 
         pagination = self.get_pagination()
         if pagination:
             self.output['pagination'] = pagination
 
         return self.output
+
+    def serialize_result(self):
+        raise NotImplementedError('Please override `serialize_result()` method.')
+
+
+class BaseMethod(AgnosticMethod):
+    def __init__(
+            self,
+            input_model=NullInput,
+            output_model=NullOutput,
+            *args,
+            **kwargs
+    ):
+        self.input_model = input_model
+        self.output_model = output_model
+        super().__init__(*args, *kwargs)
+
+    async def execute(self):
+        raise NotImplementedError('Please override `execute()` method.')
+
+    def validate_params(self, raw_params):
+        try:
+            params = self.input_model(raw_params, strict=False)
+            params.validate()
+            return params.to_primitive()
+        except (ModelConversionError, ConversionError, DataError) as exc:
+            errors = []
+            if isinstance(exc.messages, list):
+                errors = [x.summary for x in exc.messages]
+            else:
+                for k, v in exc.messages.items():
+                    if isinstance(v, dict):
+                        sub_errors = {}
+                        for sub_k, error in v.items():
+                            if isinstance(error, (ConversionError, ValidationError)):
+                                sub_errors[sub_k] = [x.summary for x in error.messages]
+                        errors.append({k: sub_errors})
+
+                    elif isinstance(v, (ConversionError, ValidationError)):
+                        errors.append({k: [x.summary for x in v.messages]})
+
+                    elif isinstance(v, list):
+                        errors.append({k: [x.summary for x in v]})
+                    elif isinstance(v, str):
+                        errors.append({k: v})
+
+            raise BadRequestException(message=errors)
+
+    def serialize_result(self):
+        if isinstance(self.result, (list, tuple, map)):
+            result = [self.output_model(x, strict=False).to_primitive() for x in self.result]
+        elif self.result and isinstance(self.result, dict):
+            result = self.output_model(self.result, strict=False).to_primitive()
+        else:
+            result = self.result
+
+        return result
 
 
 class MobileBaseMethod(BaseMethod):
