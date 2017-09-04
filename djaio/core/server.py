@@ -77,6 +77,7 @@ def get_router(settings):
     custom_router = getattr(settings, 'CUSTOM_ROUTER', None)
     if custom_router:
         return _import_func(custom_router)
+    return urlconf.DjaioUrlDispatcher
 
 
 def init_app(loop=None):
@@ -86,7 +87,7 @@ def init_app(loop=None):
     app = web.Application(
         middlewares=middlewares,
         debug=settings.DEBUG,
-        router=router() if router else None
+        router=router()
     )
     app._set_loop(loop)
     app.settings = settings

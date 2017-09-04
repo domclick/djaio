@@ -3,7 +3,6 @@ from aiohttp import web
 from djaio.core.server import init_app
 from djaio.core import logs
 
-
 class Djaio(object):
     def __init__(self, custom_init=None, loop=None):
         self.__state_shutdown_complete = False
@@ -12,7 +11,7 @@ class Djaio(object):
         self.app = init_app(loop=loop)
         if callable(custom_init):
             custom_init(self.app)
-            logs.setup(self.app)
+        logs.setup(self.app)
 
         self.app.on_shutdown.append(self.__shutdown)
         self.app.on_cleanup.append(self.__cleanup)
@@ -47,6 +46,9 @@ class Djaio(object):
                 host = '0.0.0.0'
                 port = 8080
             web.run_app(self.app, host=host, port=port, loop=self.app.loop)
+        elif subcommand == 'routes':
+            from djaio.ext.routes import print_routes
+            print_routes(self.app)
 
         elif subcommand == 'help':
             print('=' * 60)
