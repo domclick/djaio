@@ -12,7 +12,7 @@ install_requires = [
     'aiohttp_autoreload',
     'schematics==2.0.0a1',
     'aiopg==0.13.0',
-    'ipython==5.3.0',
+    'ipython==7.16.3',
     'raven==6.1.0',
     'raven-aiohttp==0.5.0',
 ]
